@@ -1,4 +1,4 @@
-# Handoff — Hafness, design → build
+# Handoff — Hafness
 
 **Read this once.** It is orientation: why the design is shaped the way it is, what is
 already settled, and what will bite you. It does not track live state.
@@ -7,7 +7,7 @@ already settled, and what will bite you. It does not track live state.
 flight and what to do next. Read that every session. If this file and that one ever
 disagree, that one wins, and this file is stale.
 
-Written 2026-09-15 at the end of the design phase; status table updated the same day when v0 was built.
+Written 2026-09-15 at the end of the design phase. Updated 2026-10-05 for the v1 loop.
 
 ---
 
@@ -18,7 +18,8 @@ is the environment around it — what it can see, what it can touch, what surviv
 sessions, what counts as evidence, and when a run must stop.
 
 It ships as a **Claude Code plugin** that also installs with one `npx skills add`: a routing
-skill, five `/hafness-<verb>` skills, and a `.hafness/` directory copied into each project.
+skill, six `/hafness-<verb>` skills, and a `.hafness/` directory copied into each project.
+Everything it writes is drawn on one generated HTML board.
 
 Built for one person. No collaboration machinery, deliberately — see
 [docs/03-comparison.md](docs/03-comparison.md) for what was cut and why.
@@ -37,15 +38,11 @@ do, ask which half is missing — the explanation or the check.
 
 | | |
 |---|---|
-| Design | Complete. Four documents, all current. |
-| Backlog | Eight v0 features, seeded with deps and done-criteria. |
-| Built | v0 complete — F-001…F-008, run `r-0001`. Not yet in git. |
-| Self-hosting | Active — this repo carries its own `.hafness/`. |
-| Gate | `bash .hafness/verify.sh` exits 0 here today. |
-
-What exists and works: the six skills, the plugin manifest, `verify.sh --log`, the
-template, `test/selfhost.sh`, and this repo's own harness. What does not exist: git history,
-a pushed remote, any v1 feature, any `rules/*.md`.
+| v0 | Built 2026-09-15 (F-001…F-008, run `r-0001`). Its ledger is in `docs/v0-ledger/`. |
+| v1 | The loop and the board (F-009), 2026-10-05. |
+| Self-hosting | Active — this repo carries its own `.hafness/` and board. |
+| Gate | `bash .hafness/verify.sh` exits 0 here. |
+| Real use | None yet. The first `/hafness-init` in a real repo is the honest test. |
 
 ## 4. Settled decisions
 
@@ -61,44 +58,44 @@ Full entries with what each one rejected are in
 5. **`HAFNESS.md` names every file**, capped at 60 lines, linted both directions.
 6. **A plugin, not a bare skill.** This reversed an earlier choice.
 
+7. **v1: you approve intent and judge results; the agent owns paths.** Contract sign-off,
+   the rubric and receipts are gone; task Scope is enforced by a fence in `verify.sh`.
+
 Do not silently revisit these. If one turns out wrong while building, write the reversal
 into `decisions.md` with what forced it — that file is the record, not the chat.
 
 ## 5. The shape, in one pass
 
-Six subsystems, each owning one artifact and one enforcement point:
+| Step | Command | Writes | The boundary |
+|---|---|---|---|
+| init | `/hafness-init` | `profile.sh`, history hook, board | you review `profile.sh` |
+| research | `/hafness-research` | `research/<slug>.md` | optional |
+| describe | `/hafness-describe` | `specs/F-nnn.md` | ≤ 5 questions; review optional |
+| plan | `/hafness-plan` | `plans/F-nnn.md`, rows in `tasks.md` | each task carries a Scope |
+| implement | `/hafness-implement` | code, a run block | the gate and the scope fence |
+| feedback | `/hafness-feedback` | `feedback.md`, tasks or acceptance | only you move `built` to `done` |
 
-| Code | Owns | Enforced by |
-|---|---|---|
-| CTR | `scope/contracts/<id>.md` | no contract, no work |
-| MAP | `HAFNESS.md` + `rules/` | ≤ 60 lines, names every file |
-| SNS | `profile.sh` + `verify.sh` + `rubric.md` | exit code is the gate |
-| STA | `state/current.md` + `decisions.md` | written before session end |
-| POL | `policy.md` | stop-and-ask on the deny list |
-| LDG | `log/` + `receipts/` + `journal.md` | append-only, receipt per run |
-
-The loop: load state → contract → act → sense → gate → receipt → handoff. Three exits from
-the gate — pass, retry within budget, escalate — and all three write to the ledger.
-Diagrams in [docs/02-flows.md](docs/02-flows.md).
+Every command ends by rewriting `state/current.md` and redrawing the board. `policy.md`
+applies throughout. The v0 diagrams in [docs/02-flows.md](docs/02-flows.md) still explain
+the gate's three exits (pass, retry within budget, escalate), which v1 keeps.
 
 ## 6. How to work in this repo
 
-**Hafness harnesses itself.** The backlog, contracts, state and run log for *building*
+**Hafness harnesses itself.** The specs, tasks, state, run log and board for *building*
 Hafness live in `.hafness/` here, under the rules Hafness defines. This is deliberate: it
 dogfoods the design and it gives the phase-one gate a real test subject.
 
 Two consequences:
 
-- **v0 was built by hand in one session** (`r-0001`), following `HAFNESS.md` as prose,
-  because the skills did not exist yet. Everything after it should go through the loop.
+- **v0 was built by hand in one session** (`r-0001`), and v1 (F-009) was built in one
+  session after a design conversation. Everything after it should go through the loop.
 - **When the gate complains about this repo, fix the repo.** Disabling a check to get a
-  pass is an automatic rubric failure by the harness's own rules, and doing it here would
-  be the project failing at the one thing it exists to prevent.
+  pass is on `policy.md`'s never list, and doing it here would be the project failing at
+  the one thing it exists to prevent.
 
 ## 7. First action
 
-Read [`.hafness/state/current.md`](.hafness/state/current.md). v0 is built; the next action
-is to get it into git and use it on a real repo.
+Read [`.hafness/state/current.md`](.hafness/state/current.md), or open `.hafness/board.html`.
 
 ## 8. What will bite you
 
@@ -107,16 +104,18 @@ Result: `commands/` is legacy, skills are the unit, and `npx skills add` is the 
 Command names became `/hafness-<verb>` (npx-safe). The one thing still assumed is that the
 installer copies `template/.hafness/` with its dot; F-001 tests that.
 
-**The rubric threshold is a guess.** `no dimension below 3, total >= 20` in `rubric.md` was
-picked to be plausible, not calibrated. Expect to move it once a few real runs have been
-scored, and write the move into `decisions.md`.
+**The scope fence compares against the last commit.** Uncommitted work from before a task
+trips it. `/hafness-implement` asks for a clean tree first; a per-task base commit is the
+upgrade if that gets annoying.
 
-**`policy.md` and `rubric.md` are hand-written, not generated**, so they do not currently
-carry the drafts-until-signed-off rule. When `/hafness-journal` starts proposing edits to
-them in v1, they will need it. Easy to forget.
+**The history hook logs everything typed**, into a committed file. It needs `python3` to
+parse the hook input, and it must never print: a prompt hook's stdout joins the conversation.
 
-**The format lint fails in both directions.** Adding a file under `.hafness/` without naming
-it in `HAFNESS.md` fails; so does leaving a row for a file you deleted. This is intentional.
+**The board is a generated view.** Hand edits to `board.html` vanish on the next prompt.
+Edit the markdown.
+
+**The format lint is strict.** Adding a file under `.hafness/` without naming it in
+`HAFNESS.md` fails. This is intentional.
 
 **Empty is skipped, not failed** in `profile.sh` — but a profile with nothing runnable
 refuses to pass at all. If a stack goes undetected, the gate says so rather than going green.
@@ -127,12 +126,13 @@ refuses to pass at all. If a stack goes undetected, the gate says so rather than
 |---|---|
 | Orientation | this file |
 | Live state | `.hafness/state/current.md` |
-| Backlog | `.hafness/scope/FEATURES.md` |
+| Board | `.hafness/board.html` |
+| Specs and tasks | `.hafness/specs/`, `.hafness/tasks.md` |
 | Decisions | `.hafness/state/decisions.md` |
-| Design | [docs/01-design.md](docs/01-design.md) |
-| Flows | [docs/02-flows.md](docs/02-flows.md) |
+| v0 design | [docs/01-design.md](docs/01-design.md), [docs/02-flows.md](docs/02-flows.md) |
 | Comparison | [docs/03-comparison.md](docs/03-comparison.md) |
 | File reference | [docs/04-files.md](docs/04-files.md) |
+| v0 ledger | `docs/v0-ledger/` |
 | Scaffold shipped to projects | `skills/hafness-init/template/` |
 
 ## 10. Not decided yet
@@ -146,11 +146,12 @@ Open on purpose. Do not treat silence here as a decision already made.
   shipped. Generation would let `init` tailor the lint; shipping keeps one version to fix.
 - **Cross-project journal** — how a lesson from one repo becomes a candidate rule in the
   next. Listed in the later tier with no mechanism behind it.
-- **Worktree isolation per contract** — wanted, unspecified.
+- **Worktree isolation per spec** — wanted, unspecified.
+- **Live reload of the local board** — today you refresh the page.
 - **Whether to fork edts-harness instead.** Still a live option, argued in
   [docs/03-comparison.md](docs/03-comparison.md). Building fresh is the right call for
   design practice and a one-person shape; forking is right if a working harness this month
-  matters more. Revisit honestly if F-001 through F-003 drag.
+  matters more. v1 has diverged far enough that this is now mostly moot.
 
 ## 11. Sources
 

@@ -1,5 +1,7 @@
 # Hafness — flows
 
+> **v0.** This describes the v0 design (contracts, sign-off, handoff). The v1 loop, describe → plan → implement → feedback on a board, is in the [README](../README.md); the reasons for the change are in `.hafness/state/decisions.md` (2026-10-05).
+
 Six diagrams. Together they define what actually happens when Hafness runs, including the
 paths most harnesses leave undefined: what happens when the gate fails, and what happens
 when the budget runs out.

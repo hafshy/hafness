@@ -1,38 +1,54 @@
 ---
 name: hafness-plan
-description: Turn a goal into FEATURES.md rows with ids, deps and done-criteria, then stop for review. Usage - /hafness-plan <goal>
+description: Plan how to build one spec — approach, files, risks — and break it into scoped tasks on the board. Usage - /hafness-plan F-nnn
 disable-model-invocation: true
 ---
 
 # /hafness-plan $ARGUMENTS
 
-Read `.hafness/scope/FEATURES.md` and `.hafness/state/current.md`. Note the highest
-existing `F-nnn`; continue from there. If the only row is the shipped example
-(`F-001 | Example — delete this once real work starts`), replace it.
+## Refuse when
 
-## Decompose
+- `specs/<id>.md` does not exist — offer `/hafness-describe`
+- its status is not `draft`, `reviewed`, or `planned` (re-planning) — say what it is and stop
 
-Split the goal into features an agent can finish in one contract each. For every one:
+## 1. Read
 
-- **ID** next `F-nnn`
-- **Title** one line, imperative
-- **Deps** ids it cannot start without, or `—`
-- **Status** `backlog`; `blocked` if any dep is not `done` or `archived`. Derived, never chosen.
-- **Contract** `—` · **Evidence** `—`
+The spec, any `research/*.md` it relies on, then the code the spec touches. Now is when
+source files are read. Load only the `rules/*.md` files the planned paths implicate.
 
-Then a detail section per feature, appended in table order:
+## 2. Write the plan
 
-    ## F-nnn — <title>
+`.hafness/plans/<id>.md`, following `plans/README.md` exactly. Fill it from the repo, not
+from imagination:
 
-    **Done when**
+- **Files** — real paths that will change. Look at the tree.
+- **Not touching** — real paths that are adjacent and tempting.
+- **Verification** — for every item in the spec's "How you'll know": which `verify.sh` check,
+  command, or screenshot will show it. An item nothing can show is a risk; list it there.
+- **Budget** — `Attempts: 3` unless the operator said otherwise.
 
-    - [ ] three to six statements, each checkable by `verify.sh` or the rubric
-    - [ ] written now, before the work — a criterion invented afterwards is a description of whatever happened
+## 3. Write the tasks
 
-## Write, lint, stop
+Append rows to `.hafness/tasks.md`, continuing the highest `T-nnn`:
 
-Append the rows and sections. Run `bash .hafness/verify.sh`; the format lint must pass —
-fix the file, never the lint. Then stop:
+    | T-nnn | <spec id> | <one line, imperative> | todo | `path/`, `other/file.swift` | — |
 
-> Plan written. Review the table and the done-criteria. Nothing is contracted yet.
-> `/hafness-contract <id>` binds one feature.
+- Small: one sitting each, in the order they should be done.
+- **Scope** — only the paths from the plan's Files list this task needs. The scope fence
+  fails the gate on any change outside the Scope of the tasks in progress, so be exact.
+- `blocked` instead of `todo` if it waits on another spec that is not `done`.
+
+Re-planning: mark the old unfinished tasks `dropped`, never delete rows.
+
+## 4. Finish
+
+1. Spec `Status:` → `planned`.
+2. `state/current.md`: **In flight** → `<id> — <title> (planned, n tasks)`. **Next action** →
+   `/hafness-implement <id>`. Plan risks go under **Open risks**.
+3. `bash .hafness/verify.sh` — the format lint must pass; fix the files, never the lint.
+4. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
+   (with the URL under `## Board` if one is there, else new — and record the URL).
+5. Stop:
+
+> Plan and <n> tasks for <id> are on the board. Each task's Scope is the fence the gate
+> will hold me to. Edit anything you disagree with. `/hafness-implement <id>` when ready.

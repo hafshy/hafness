@@ -1,20 +1,29 @@
 # Hafness — map
 
-Routing only. If you are tempted to explain something here, it belongs in `rules/`.
-Hard limit: 60 lines, linted by `verify.sh`. The index below is routing, not explanation —
-that is why it earns the space.
+Routing only. Explanations belong in `rules/` or a folder's README. ≤ 60 lines, linted.
 
 ## Start every session
 
-1. Read `state/current.md` — in flight, next action, open risks.
-2. Read today's file in `log/`.
-3. Read the open contract in `scope/contracts/`.
-4. Print the next action. Do not open a source file before this.
+1. Read `state/current.md` — in flight, next action, open risks, board link.
+2. Read the `tasks.md` table and the spec in flight under `specs/`.
+3. Print the next action. Do not open a source file before this.
 
-## Generated files are drafts
+## The loop
 
-Every file you generate is written for a human to read and is a draft until signed off.
-After writing one, stop, say what it will cause, and wait. No bounded contract, no work.
+    init → [research] → describe → [review] → plan → implement → feedback ↺
+
+| Step | Command | Writes |
+|---|---|---|
+| init | `/hafness-init` | `profile.sh`, the history hook, the first board |
+| research | `/hafness-research <topic>` — optional | `research/<slug>.md` |
+| describe | `/hafness-describe <what you want>` | `specs/F-nnn.md`, status `draft` |
+| review | the operator, optional — "reviewed" | spec status `reviewed` |
+| plan | `/hafness-plan F-nnn` | `plans/F-nnn.md` + rows in `tasks.md` |
+| implement | `/hafness-implement F-nnn` | code, a run block in `log/`, tasks `done` |
+| feedback | `/hafness-feedback F-nnn <text>` | `feedback.md`, new tasks or acceptance |
+
+Every step ends the same way: rewrite `state/current.md`, run `bash .hafness/board.sh`,
+then publish `board.html` if this session has an Artifact tool (URL kept in `current.md`).
 
 ## Every file in this harness
 
@@ -22,34 +31,30 @@ After writing one, stop, say what it will cause, and wait. No bounded contract, 
 |---|---|
 | `HAFNESS.md` | this map — routing, nothing else |
 | `policy.md` | what needs approval, what is forbidden |
-| `rubric.md` | what counts as good, scored |
 | `profile.sh` | what will actually run; sourced by `verify.sh` |
-| `verify.sh` | the gate — format lint, then the project checks |
+| `verify.sh` | the gate — format lint, scope fence, then the project checks |
+| `board.sh` | renders `board.html` from the markdown below |
+| `board.html` | the board — generated, never edited by hand |
+| `history.sh` | prompt hook — appends every prompt to `history.md` |
+| `history.md` | every prompt, tagged when it is a Hafness command |
+| `research/` | optional research notes, one per topic |
+| `specs/` | one spec per feature — what and why |
+| `plans/` | one plan per spec — how, which files |
+| `tasks.md` | every task: status, scope, run id |
+| `feedback.md` | the operator's feedback on built work |
 | `rules/` | domain rules, loaded on demand only |
-| `scope/FEATURES.md` | the backlog: deps, status, evidence |
-| `scope/contracts/` | one bounded task each, signed off before work |
-| `state/current.md` | in flight, next action, open risks |
+| `state/current.md` | in flight, next action, open risks, board link |
 | `state/decisions.md` | decision log — supersedes chat |
-| `log/` | one dated file per day, one block per run |
+| `log/` | one dated file per day, one block per gate run |
 | `log/journal.md` | lessons, promoted into rules or checks |
-| `log/receipts/` | how each run produced its output |
-| `archive/` | closed contracts, out of the hot path |
 
 A file under `.hafness/` that is not named above is undocumented, and `verify.sh` fails.
 
-## Load on demand only
-
-`rules/*.md` — only the ones the current contract's file scope implicates.
-
 ## Definition of done
 
-1. `verify.sh` exits 0 and prints `HAFNESS_VERIFY: PASS`.
-2. The run is in `log/` (written by `verify.sh --log`) and its id is in the feature's Evidence cell.
-3. The rubric score meets the threshold.
-4. A receipt exists in `log/receipts/`.
+A spec is `built` when `verify.sh --log` prints `HAFNESS_VERIFY: PASS` and every one of its
+tasks carries that run id. It is `done` only when the operator accepts it through feedback.
+A missing verdict line is a FAIL, never a pass.
 
-Any one missing means not done. A missing verdict line is a FAIL, never a pass.
-
-## Before the session ends
-
-Run `/hafness-handoff`. State must not be older than the last run.
+Specs, plans and tasks are drafts for a human to read: after writing one, stop and say
+what it will cause. The operator may edit any of them; the edit wins.

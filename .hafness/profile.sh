@@ -10,7 +10,7 @@ HAF_STACK="claude-plugin"   # found: this repo is the Hafness plugin source
 
 HAF_BUILD=""                # nothing to build — markdown and shell
 HAF_TEST="bash test/selfhost.sh"   # found: test/selfhost.sh
-HAF_LINT="bash -n .hafness/verify.sh && bash -n .hafness/profile.sh && bash -n test/selfhost.sh"   # found: all shell
+HAF_LINT="for f in .hafness/*.sh test/selfhost.sh; do bash -n \"\$f\" || exit 1; done"   # found: all shell
 HAF_TYPECHECK=""            # not applicable
 
 HAF_EXTRA=(

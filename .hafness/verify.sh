@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Hafness gate. One script, one exit code, one machine-parseable verdict.
+# Format lint, then the scope fence, then whatever profile.sh declares.
 #
 # RULE: never add a check whose command was not found in this project.
 # A check that cannot run is worse than no check. Delete it, do not stub it.
@@ -48,10 +49,11 @@ harness_lint() {
       case "$rel" in
         HAFNESS.md) continue ;;
         log/[0-9]*.md) grep -q '`log/`' "$HAF/HAFNESS.md" && continue ;;
-        scope/contracts/*) grep -q '`scope/contracts/`' "$HAF/HAFNESS.md" && continue ;;
-        log/receipts/*) grep -q '`log/receipts/`' "$HAF/HAFNESS.md" && continue ;;
-        archive/*) grep -q '`archive/`' "$HAF/HAFNESS.md" && continue ;;
+        specs/*) grep -q '`specs/`' "$HAF/HAFNESS.md" && continue ;;
+        plans/*) grep -q '`plans/`' "$HAF/HAFNESS.md" && continue ;;
+        research/*) grep -q '`research/`' "$HAF/HAFNESS.md" && continue ;;
         rules/*) grep -q '`rules/`' "$HAF/HAFNESS.md" && continue ;;
+        .DS_Store|*/.DS_Store) continue ;;
       esac
       grep -qF -- "\`$rel\`" "$HAF/HAFNESS.md" || undoc="$undoc $rel"
     done < <(cd "$HAF" && find . -type f | sed 's|^\./||' | sort)
@@ -62,33 +64,57 @@ harness_lint() {
     fi
   fi
 
-  # FEATURES.md column contract.
-  f="$HAF/scope/FEATURES.md"
+  # tasks.md column contract.
+  f="$HAF/tasks.md"
   if [ -f "$f" ]; then
-    local want='| ID | Title | Deps | Status | Contract | Evidence |'
+    local want='| ID | Spec | Task | Status | Scope | Run |'
     if ! grep -qxF "$want" "$f"; then
-      echo "    FEATURES.md header drifted"
+      echo "    tasks.md header drifted"
       echo "      expected: $want"
       bad=1
     fi
     # Row shape: 6 columns between the outer pipes.
-    if awk -F'|' '/^\| F-/ && NF != 8 {print "      malformed row: " $0}' "$f" | grep -q .; then
-      awk -F'|' '/^\| F-/ && NF != 8 {print "      malformed row: " $0}' "$f"
-      echo "    FEATURES.md has rows with the wrong number of columns"
+    if awk -F'|' '/^\| T-/ && NF != 8' "$f" | grep -q .; then
+      awk -F'|' '/^\| T-/ && NF != 8 {print "      malformed row: " $0}' "$f"
+      echo "    tasks.md has rows with the wrong number of columns"
       bad=1
     fi
-    # done/archived must carry an evidence id.
-    if awk -F'|' '/^\| F-/ && $5 ~ /done|archived/ && $7 ~ /^[[:space:]]*(—|-)?[[:space:]]*$/ {print}' "$f" | grep -q .; then
-      echo "    a feature is done or archived with no evidence id:"
-      awk -F'|' '/^\| F-/ && $5 ~ /done|archived/ && $7 ~ /^[[:space:]]*(—|-)?[[:space:]]*$/ {print "      " $2}' "$f"
+    if awk -F'|' '/^\| T-/ && $5 !~ /^ *(todo|doing|done|blocked|dropped) *$/' "$f" | grep -q .; then
+      awk -F'|' '/^\| T-/ && $5 !~ /^ *(todo|doing|done|blocked|dropped) *$/ {print "      " $2 "has status" $5}' "$f"
+      echo "    tasks.md has an unknown status"
       bad=1
     fi
-    # Empty cells must be an em dash, never blank.
-    if awk -F'|' '/^\| F-/ {for(i=2;i<=7;i++) if($i ~ /^[[:space:]]*$/) {print; break}}' "$f" | grep -q .; then
-      echo "    FEATURES.md has blank cells — use — instead"
+    # done must carry the run id that proved it.
+    if awk -F'|' '/^\| T-/ && $5 ~ /done/ && $7 !~ /r-[0-9]+/' "$f" | grep -q .; then
+      echo "    a task is done with no run id:"
+      awk -F'|' '/^\| T-/ && $5 ~ /done/ && $7 !~ /r-[0-9]+/ {print "      " $2}' "$f"
+      bad=1
+    fi
+    if awk -F'|' '/^\| T-/ {for(i=2;i<=7;i++) if($i ~ /^[[:space:]]*$/) {print; break}}' "$f" | grep -q .; then
+      echo "    tasks.md has blank cells — use — instead"
       bad=1
     fi
   fi
+
+  # Every spec opens with its id and carries a known status.
+  for f in "$HAF"/specs/F-*.md; do
+    [ -e "$f" ] || continue
+    head -1 "$f" | grep -qE '^# F-[0-9]+ — .+' || { echo "    $(basename "$f"): first line must be '# F-nnn — <title>'"; bad=1; }
+    grep -qE '^Status: (draft|reviewed|planned|building|built|done|dropped)$' "$f" \
+      || { echo "    $(basename "$f"): missing or unknown 'Status:' line"; bad=1; }
+  done
+
+  # Feedback and history headers: readable, but still one regex each.
+  lint_headers() {              # lint_headers <file> <regex>
+    [ -f "$1" ] || return 0
+    local drift; drift="$(grep '^## ' "$1" | grep -vE "$2" || true)"
+    [ -z "$drift" ] && return 0
+    echo "    header does not match the grammar in $(basename "$1"):"
+    printf '%s\n' "$drift" | sed 's/^/      /'
+    return 1
+  }
+  lint_headers "$HAF/feedback.md" '^## FB-[0-9]+ · [0-9]{4}-[0-9]{2}-[0-9]{2} · F-[0-9]+ · (open|planned|done|accepted)$' || bad=1
+  lint_headers "$HAF/history.md" '^## [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} · (prompt|`[a-z]+`)$' || bad=1
 
   # profile.sh must declare a stack and at least one runnable check.
   f="$HAF/profile.sh"
@@ -120,6 +146,36 @@ harness_lint() {
 }
 
 run "harness format" harness_lint
+
+# --- scope fence: changed files must sit inside the Scope of a task in progress ---
+# ponytail: compares against HEAD, so uncommitted work from before the task trips it.
+# Commit before /hafness-implement for a clean baseline; a per-task base commit if that bites.
+scope_fence() {
+  local root scopes changed file pat ok out=""
+  root="$(dirname "$HAF")"
+  [ -f "$HAF/tasks.md" ] || return 0
+  scopes="$(awk -F'|' '/^\| T-/ && $5 ~ /doing/ {print $6}' "$HAF/tasks.md" \
+    | tr ',' '\n' | tr -d '`' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -vx '—' | grep . || true)"
+  if [ -z "$scopes" ]; then echo "    no task in progress — fence not armed"; return 0; fi
+  if ! git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then echo "    not a git repo — fence skipped"; return 0; fi
+  changed="$(cd "$root" && { git diff --name-only HEAD 2>/dev/null || git ls-files; git ls-files --others --exclude-standard; } | sort -u)"
+  while IFS= read -r file; do
+    case "$file" in ''|.hafness/*|CLAUDE.md|AGENTS.md) continue ;; esac
+    ok=0
+    while IFS= read -r pat; do
+      case "$pat" in
+        */) [[ "$file" == "$pat"* ]] && ok=1 ;;
+        *)  [[ "$file" == $pat ]] && ok=1 ;;
+      esac
+    done <<< "$scopes"
+    [ "$ok" -eq 1 ] || out="$out $file"
+  done <<< "$changed"
+  [ -z "$out" ] && return 0
+  echo "    changed outside the Scope of every doing task:"
+  for file in $out; do echo "      $file"; done
+  return 1
+}
+run "scope fence" scope_fence
 
 # --- project checks: whatever profile.sh declares, nothing else -------------
 if [ ! -f "$HAF/profile.sh" ]; then
