@@ -5,7 +5,7 @@ Routing only. Explanations belong in `rules/` or a folder's README. ≤ 60 lines
 ## Start every session
 
 1. Read `state/current.md` — in flight, next action, open risks, board link.
-2. Read the `tasks.md` table and the spec in flight under `specs/`.
+2. Read `tasks.md` and the spec in flight. A task left `doing`, not escalated: session was cut off.
 3. Print the next action. Do not open a source file before this.
 
 ## The loop
@@ -15,12 +15,12 @@ Routing only. Explanations belong in `rules/` or a folder's README. ≤ 60 lines
 | Step | Command | Writes |
 |---|---|---|
 | init | `/hafness-init` | `profile.sh`, the history hook, the first board |
-| research | `/hafness-research <topic>` — optional | `research/<slug>.md` |
+| research | `/hafness-research <topic>` — optional; describe and plan research when needed | `research/<slug>.md` |
 | describe | `/hafness-describe <what you want>` | `specs/F-nnn.md`, status `draft` |
 | review | the operator, optional — "reviewed" | spec status `reviewed` |
 | plan | `/hafness-plan F-nnn` | `plans/F-nnn.md` + rows in `tasks.md` |
 | implement | `/hafness-implement F-nnn` | code, a run block in `log/`, tasks `done` |
-| feedback | `/hafness-feedback F-nnn <text>` | `feedback.md`, new tasks or acceptance |
+| feedback | `/hafness-feedback F-nnn <text>` | `feedback.md`, revision tasks + plan update, or acceptance |
 
 Every step ends the same way: rewrite `state/current.md`, run `bash .hafness/board.sh`,
 then publish `board.html` if this session has an Artifact tool (URL kept in `current.md`).

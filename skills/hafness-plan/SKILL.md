@@ -9,14 +9,35 @@ disable-model-invocation: true
 ## Refuse when
 
 - `specs/<id>.md` does not exist — offer `/hafness-describe`
-- its status is not `draft`, `reviewed`, or `planned` (re-planning) — say what it is and stop
+- its status is not `draft`, `reviewed`, or `planned` (re-planning) — say what it is and stop.
+  For `built` or `done`, changes go through feedback: offer `/hafness-feedback <id> <what to change>`
 
 ## 1. Read
 
 The spec, any `research/*.md` it relies on, then the code the spec touches. Now is when
 source files are read. Load only the `rules/*.md` files the planned paths implicate.
 
-## 2. Write the plan
+## 2. Research, if needed
+
+Research before planning when both hold:
+
+- building it means a guess about how — a library, API, SDK or platform capability you
+  have not seen used in this repo, or code the spec touches that you cannot yet explain
+  (an unfamiliar module, an integration point, a framework version's behavior)
+- no `research/*.md` note already covers it
+
+Then do what `/hafness-research` does, inline, aimed at implementation: how this project
+already does similar things (real paths), the docs for the APIs involved, the realistic
+options and their cost here. Every finding names its source — a URL, a doc, or a path.
+Write `.hafness/research/<slug>.md` in the format of `research/README.md`. Skip its Finish
+step: carry on with this plan.
+
+A spec that only touches code you have read and understand needs no research. Never redo
+what a note already covers — read it.
+
+The plan's Approach follows the note's Recommendation, or says why not.
+
+## 3. Write the plan
 
 `.hafness/plans/<id>.md`, following `plans/README.md` exactly. Fill it from the repo, not
 from imagination:
@@ -27,7 +48,7 @@ from imagination:
   command, or screenshot will show it. An item nothing can show is a risk; list it there.
 - **Budget** — `Attempts: 3` unless the operator said otherwise.
 
-## 3. Write the tasks
+## 4. Write the tasks
 
 Append rows to `.hafness/tasks.md`, continuing the highest `T-nnn`:
 
@@ -40,7 +61,7 @@ Append rows to `.hafness/tasks.md`, continuing the highest `T-nnn`:
 
 Re-planning: mark the old unfinished tasks `dropped`, never delete rows.
 
-## 4. Finish
+## 5. Finish
 
 1. Spec `Status:` → `planned`.
 2. `state/current.md`: **In flight** → `<id> — <title> (planned, n tasks)`. **Next action** →
@@ -52,3 +73,5 @@ Re-planning: mark the old unfinished tasks `dropped`, never delete rows.
 
 > Plan and <n> tasks for <id> are on the board. Each task's Scope is the fence the gate
 > will hold me to. Edit anything you disagree with. `/hafness-implement <id>` when ready.
+
+If step 2 wrote a note, add one line before that: `Researched first: research/<slug>.md — <its recommendation, one line>`.

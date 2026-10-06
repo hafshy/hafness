@@ -1,7 +1,8 @@
 # Plans
 
-One file per spec: `F-nnn.md`, same id. Written by `/hafness-plan`. **How**, and which files.
-The tasks it produces go into `../tasks.md`; this file holds the reasoning behind them.
+One file per spec: `F-nnn.md`, same id. Written by `/hafness-plan`, kept current by
+`/hafness-feedback`. **How**, and which files. The tasks it produces go into `../tasks.md`;
+this file holds the reasoning behind them.
 
     # Plan F-nnn — <title>
 
@@ -23,3 +24,7 @@ The tasks it produces go into `../tasks.md`; this file holds the reasoning behin
 
     ## Budget
     Attempts: 3
+
+    ## Revisions
+    - FB-nnn — what changed in the approach (T-nnn, …). Added by `/hafness-feedback`;
+      leave the section out until the first revision.

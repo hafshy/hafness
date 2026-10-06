@@ -1,7 +1,8 @@
 # Research
 
-Optional. One file per topic: `<slug>.md`. Written by `/hafness-research`, read by
-`/hafness-describe` and `/hafness-plan` when the topic is relevant.
+One file per topic: `<slug>.md`. Written by `/hafness-research` when you ask, or by
+`/hafness-describe` and `/hafness-plan` when a request needs it and no note covers it.
+Read by both whenever the topic is relevant.
 
     # <question, in plain words>
 

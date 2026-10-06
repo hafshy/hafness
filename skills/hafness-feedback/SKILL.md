@@ -8,6 +8,11 @@ disable-model-invocation: true
 
 No spec id given? Use the spec in flight in `state/current.md`; if none is clear, ask.
 
+**Already accepted?** If the spec's `Status:` is `done` and this is a change request, write
+nothing yet. Ask: "F-nnn is accepted. Reopen it with this change, or start a new spec?"
+- **Reopen** — carry on below; the spec goes back to `planned`.
+- **New spec** — write nothing here. Offer `/hafness-describe <their words>, building on F-nnn`.
+
 ## 1. Record it
 
 Append to `.hafness/feedback.md`, continuing the highest `FB-nnn`:
@@ -29,6 +34,13 @@ Append to `.hafness/feedback.md`, continuing the highest `FB-nnn`:
   know" first, and say so. The spec stays the source of truth.
 - Then append tasks to `tasks.md` (same row format and Scope rules as `/hafness-plan`),
   each one tracing back to this entry. Add **Tasks** `T-nnn, …` to the entry; status → `planned`.
+  Revising work that is already built is expected: a task's Scope may name files earlier
+  tasks built. Read those files first, so the task says what changes in them.
+- Bring `plans/<id>.md` up to date with the new tasks: add their paths to **Files**, take
+  them out of **Not touching** (and say so — that list was a promise), extend
+  **Verification** for any new "How you'll know" item, and append one line under
+  **Revisions**: `- FB-nnn — <what changes in the approach> (T-nnn, …)`. If the change needs
+  research no note covers, write that research note first, as `/hafness-plan` does.
 - Spec `Status:` → `planned`.
 
 When `/hafness-implement` later finishes those tasks with a PASS, it sets this entry `done`.

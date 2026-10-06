@@ -69,11 +69,11 @@ into `decisions.md` with what forced it — that file is the record, not the cha
 | Step | Command | Writes | The boundary |
 |---|---|---|---|
 | init | `/hafness-init` | `profile.sh`, history hook, board | you review `profile.sh` |
-| research | `/hafness-research` | `research/<slug>.md` | optional |
+| research | `/hafness-research` | `research/<slug>.md` | optional; describe and plan research when needed |
 | describe | `/hafness-describe` | `specs/F-nnn.md` | ≤ 5 questions; review optional |
 | plan | `/hafness-plan` | `plans/F-nnn.md`, rows in `tasks.md` | each task carries a Scope |
 | implement | `/hafness-implement` | code, a run block | the gate and the scope fence |
-| feedback | `/hafness-feedback` | `feedback.md`, tasks or acceptance | only you move `built` to `done` |
+| feedback | `/hafness-feedback` | `feedback.md`, revision tasks + plan update, or acceptance | only you move `built` to `done` |
 
 Every command ends by rewriting `state/current.md` and redrawing the board. `policy.md`
 applies throughout. The v0 diagrams in [docs/02-flows.md](docs/02-flows.md) still explain

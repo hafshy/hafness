@@ -1,13 +1,15 @@
 ---
 name: hafness-research
-description: Optional step before describing — research a topic (web, docs, this codebase) into a short note on the board. Usage - /hafness-research <topic>
+description: Research a topic (web, docs, this codebase) into a short note on the board. Optional to type - /hafness-describe and /hafness-plan research on their own when a request needs it. Usage - /hafness-research <topic>
 disable-model-invocation: true
 ---
 
 # /hafness-research $ARGUMENTS
 
-Research is optional. It exists so `/hafness-describe` and `/hafness-plan` start from
-evidence instead of memory.
+Research is optional to type. It exists so `/hafness-describe` and `/hafness-plan` start
+from evidence instead of memory — and when nobody ran it, they do the same research
+themselves whenever the request would otherwise rest on a guess. Running it yourself is for
+a topic you want explored before you know what to ask for.
 
 ## Research
 

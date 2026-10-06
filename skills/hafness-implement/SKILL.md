@@ -17,9 +17,14 @@ The scope fence compares against the last commit. If `git status` shows changes 
 `.hafness/`, tell the operator and ask them to commit or stash first. Do not commit for
 them without an explicit yes — `policy.md` applies.
 
+Exception: an interrupted session. Tasks of this spec still `doing` mean the last session
+stopped before its gate. Their uncommitted changes inside those tasks' Scope are that work —
+keep them and resume. Changes outside every such Scope still need the operator's call.
+
 ## 2. Work, task by task
 
-Spec `Status:` → `building`. For each `todo` task of this spec, in table order:
+Spec `Status:` → `building`. First any task of this spec still `doing` (finish it), then
+each `todo` task, in table order:
 
 1. Set it `doing`, run `bash .hafness/board.sh` so the board shows what is in progress.
 2. Do the work, inside the task's **Scope** only. Read the plan, not the whole repo.
@@ -33,8 +38,8 @@ Anything on `policy.md`'s stop-and-ask list: stop and ask, every time.
 
 ## 3. Gate, logged
 
-Attempt = number of run blocks for this spec across `log/*.md`, plus one. Budget = the
-plan's `Attempts:`. Run:
+Attempt = number of run blocks for this spec across `log/*.md` *since its last PASS*, plus
+one — a revision from feedback starts a fresh budget. Budget = the plan's `Attempts:`. Run:
 
     bash .hafness/verify.sh --log <id> <attempt> <budget>
 

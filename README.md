@@ -29,7 +29,7 @@ npx skills add hafshy/hafness -a claude-code -g -y
 
 ```
 /hafness-init                       # once: copy .hafness/, detect the stack, install the history hook, draw the board
-/hafness-research <topic>           # optional: a sourced research note before you commit to anything
+/hafness-research <topic>           # optional: describe and plan also research on their own when needed
 /hafness-describe <what you want>   # your idea → a spec (what and why) on the board
 /hafness-plan F-001                 # spec → plan + scoped tasks on the board
 /hafness-implement F-001            # build task by task, run the gate, leave it built for you to try
@@ -175,8 +175,9 @@ You run the app and try it.
 ```
 
 Claude records your words in `feedback.md`, writes how it read them, updates the spec if
-the behavior changed, and adds a task. `/hafness-implement F-001` picks it up. When it is
-right:
+the behavior changed, adds tasks that revise what was built, and updates the plan to match.
+`/hafness-implement F-001` picks it up with a fresh attempt budget. Feedback on a spec you
+already accepted makes Claude ask first: reopen it, or start a new spec. When it is right:
 
 ```
 /hafness-feedback F-001 accept
@@ -194,6 +195,9 @@ New terminal, no chat history. The routing skill reads `state/current.md` and pr
 > **Board** — https://claude.ai/artifact/…
 
 Nothing had to be re-explained. That is the test of the whole harness.
+
+If the last session stopped halfway (tasks still `doing`, no gate run), the resume point
+says so first and the next action becomes finishing them with `/hafness-implement`.
 
 ### When something goes wrong twice
 

@@ -60,7 +60,7 @@ session can read it and continue without you re-explaining anything.
 
 | File | Job | Written by | Review | Format |
 |---|---|---|---|---|
-| `research/<slug>.md` | One sourced note per topic: findings, options, recommendation | `/hafness-research` | ○ | markdown, shape in `research/README.md` |
+| `research/<slug>.md` | One sourced note per topic: findings, options, recommendation | `/hafness-research`, or describe/plan when needed | ○ | markdown, shape in `research/README.md` |
 | `specs/F-nnn.md` | What and why for one feature: requirements, how you'll know, assumptions | `/hafness-describe` | ● Assumptions first | markdown · first line and `Status:` linted |
 | `plans/F-nnn.md` | How: approach, files, not touching, risks, verification, budget | `/hafness-plan` | ○ | markdown, shape in `plans/README.md` |
 | `tasks.md` | Every task: spec, status, Scope, run id | `/hafness-plan`, `/hafness-feedback`, `/hafness-implement` | ○ | markdown table · columns, statuses, run ids linted |
