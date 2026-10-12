@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hafness Field Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column for the explanation; the board preview and the file explorer break out to full width.
+   Palette and type are the board's own, so the guide and the board read as one product.
+   Role colors carry meaning everywhere: ask = you, agent = the agent, gate = the gate, check = passed. */
+:root {
+  --bg: #F3F6F8; --surface: #FFFFFF; --sunk: #E9EEF2; --ink: #14202A; --muted: #586977; --line: #D6DEE4;
+  --agent: #2F5D8A; --agent-bg: #E6EFF8; --gate: #9C5800; --gate-bg: #FCEBCF;
+  --ask: #6B4FA3; --ask-bg: #EFEAF8; --check: #22704F; --check-bg: #E1F2E9; --bad: #B3261E; --bad-bg: #FBE4E2;
+  --code-bg: #14202A; --code-ink: #DCE6EC; --code-dim: #8FA3B1;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E151B; --surface: #16202A; --sunk: #111A22; --ink: #E4ECF1; --muted: #93A5B2; --line: #283643;
+  --agent: #8DB8E4; --agent-bg: #1A2B3C; --gate: #F2AE4A; --gate-bg: #3A2A12;
+  --ask: #B9A2EC; --ask-bg: #2A2340; --check: #66C79B; --check-bg: #15332A; --bad: #F2867E; --bad-bg: #3D1C1A;
+  --code-bg: #0A1015; --code-ink: #DCE6EC; --code-dim: #7E93A2;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E151B; --surface: #16202A; --sunk: #111A22; --ink: #E4ECF1; --muted: #93A5B2; --line: #283643;
+  --agent: #8DB8E4; --agent-bg: #1A2B3C; --gate: #F2AE4A; --gate-bg: #3A2A12;
+  --ask: #B9A2EC; --ask-bg: #2A2340; --check: #66C79B; --check-bg: #15332A; --bad: #F2867E; --bad-bg: #3D1C1A;
+  --code-bg: #0A1015; --code-ink: #DCE6EC; --code-dim: #7E93A2;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); margin: 0; }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 96px; display: grid; gap: 72px; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.12; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); letter-spacing: -0.025em; font-weight: 800; }
+h2 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); letter-spacing: -0.015em; }
+h3 { font-size: 1.1rem; }
+p { margin: 0; }
+.lede { font-size: 1.12rem; max-width: 62ch; color: var(--ink); }
+.prose { max-width: 66ch; display: grid; gap: 12px; }
+code, .mono { font-family: var(--mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+a { color: var(--agent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gate); outline-offset: 2px; }
+.eyebrow { font: 600 0.72rem/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+section { display: grid; gap: 22px; scroll-margin-top: 16px; }
+.sec-head { display: grid; gap: 10px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* role chips */
+.role { display: inline-flex; align-items: center; gap: 6px; font: 600 0.74rem/1 var(--mono); padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+.role::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.r-you { background: var(--ask-bg); color: var(--ask); }
+.r-agent { background: var(--agent-bg); color: var(--agent); }
+.r-gate { background: var(--gate-bg); color: var(--gate); }
+.r-check { background: var(--check-bg); color: var(--check); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* hero */
+.hero { display: grid; gap: 22px; padding-top: 8px; }
+.hero h1 em { font-style: normal; color: var(--ask); }
+.hero h1 b { color: var(--gate); font-weight: inherit; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem; }
+.toc a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+.toc a:hover { color: var(--ink); border-color: var(--ink); }
+
+/* code blocks */
+pre { margin: 0; background: var(--code-bg); color: var(--code-ink); font: 0.8rem/1.6 var(--mono); padding: 14px 16px; border-radius: 8px; overflow-x: auto; white-space: pre; }
+pre .c { color: var(--code-dim); }
+.cmd { display: flex; align-items: center; gap: 8px; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 6px 6px 6px 14px; min-width: 0; }
+.cmd code { font-size: 0.84rem; overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; background: none; padding: 0; }
+.copy { background: transparent; border: 1px solid var(--code-dim); color: var(--code-ink); border-radius: 6px; padding: 4px 10px; font: 600 0.72rem var(--mono); cursor: pointer; flex: none; }
+.copy:hover { border-color: var(--code-ink); }
+
+/* the loop */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.steps button { width: 100%; height: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 14px; cursor: pointer; display: grid; gap: 4px; align-content: start; }
+.steps button:hover { border-color: var(--muted); }
+.steps .n { font: 600 0.7rem var(--mono); color: var(--muted); }
+.steps .nm { font: 700 1.05rem/1.1 var(--display); }
+.steps .opt { font: 0.68rem var(--mono); color: var(--muted); }
+.steps .bar { height: 4px; border-radius: 2px; margin-top: 6px; }
+.steps .optional button { border-style: dashed; }
+.steps button[aria-selected="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.loopback { font: 0.8rem var(--mono); color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; }
+.detail .left { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.detail .right { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.detail h3 { font-size: 1.5rem; }
+.kv { display: grid; gap: 4px; }
+.kv .k { font: 600 0.7rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.kv ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.stopcard { border-left: 3px solid var(--ask); background: var(--ask-bg); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 0.94rem; }
+@media (max-width: 900px) { .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); } .detail { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .detail { padding: 16px; } }
+
+/* who does what */
+.roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.rolecol { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 10px; padding: 18px; display: grid; gap: 12px; align-content: start; }
+.rolecol ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 0.95rem; }
+.callout { font-size: 1.05rem; max-width: 62ch; border-left: 3px solid var(--ask); padding-left: 14px; }
+@media (max-width: 820px) { .roles { grid-template-columns: 1fr; } }
+
+/* board preview: a browser frame around a copy of the real board's layout */
+.frame { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: 0 1px 0 var(--line), 0 18px 40px -24px rgba(20, 32, 42, .35); }
+.chrome { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--sunk); border-bottom: 1px solid var(--line); font: 0.74rem var(--mono); color: var(--muted); }
+.chrome .dots { display: flex; gap: 5px; } .chrome .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block; }
+.chrome .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chrome .ex { background: var(--gate-bg); color: var(--gate); padding: 2px 8px; border-radius: 999px; font-weight: 600; flex: none; }
+.bp { padding: 24px 22px 28px; display: grid; gap: 20px; font-size: 14px; line-height: 1.55; }
+.bp h1 { font-size: clamp(1.5rem, 3.6vw, 2.1rem); font-weight: 700; letter-spacing: -0.02em; }
+.bp .top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px 28px; align-items: end; }
+.bp .title { display: grid; gap: 6px; }
+.bp .next { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--gate); border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; }
+.bp .facts { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.bp .loop { display: flex; flex-wrap: wrap; gap: 6px; }
+.bp .stage { flex: 1 1 110px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; display: grid; gap: 1px; min-width: 0; }
+.bp .stage b { font: 700 1.4rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.bp .stage span { font-size: 0.76rem; color: var(--muted); }
+.bp .stage code { font-size: 0.68rem; color: var(--muted); background: none; padding: 0; }
+.bp .stage.hot { border-color: var(--gate); background: var(--gate-bg); }
+.bp .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.bp .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 9px 12px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+.bp .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+.bp .tabs .count { font: 0.7rem var(--mono); margin-left: 5px; color: var(--muted); }
+.bp .panel { display: grid; gap: 12px; min-height: 260px; align-content: start; }
+.pill { display: inline-block; font: 600 0.68rem/1 var(--mono); letter-spacing: 0.04em; padding: 4px 7px; border-radius: 999px; white-space: nowrap; background: var(--sunk); color: var(--muted); }
+.s-reviewed, .s-open { background: var(--ask-bg); color: var(--ask); }
+.s-planned, .s-todo { background: var(--agent-bg); color: var(--agent); }
+.s-building, .s-doing { background: var(--gate-bg); color: var(--gate); }
+.s-PASS, .s-done { background: var(--check-bg); color: var(--check); }
+.s-blocked, .s-FAIL, .s-ESCALATED { background: var(--bad-bg); color: var(--bad); }
+.bp .features { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.bp .feature { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.bp .fhead { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; }
+.bp .fhead .id { font: 600 0.76rem var(--mono); color: var(--muted); }
+.bp .fhead h3 { font-size: 1rem; }
+.bp .track { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.bp .track li { font-size: 0.62rem; color: var(--muted); display: grid; gap: 4px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bp .track li::before { content: ""; height: 4px; border-radius: 2px; background: var(--sunk); }
+.bp .track li.on::before { background: var(--agent); }
+.bp .track li.now { color: var(--ink); font-weight: 700; }
+.bp .track li.now::before { background: var(--gate); }
+.bp .track.done li::before { background: var(--check); }
+.bp .fmeta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.78rem; color: var(--muted); }
+.bp details { border-top: 1px solid var(--line); padding-top: 8px; }
+.bp summary { cursor: pointer; font-weight: 700; font-size: 0.84rem; }
+.bp .md { font-size: 0.86rem; display: grid; gap: 6px; padding-top: 6px; }
+.bp .md h4 { margin: 6px 0 0; font: 700 0.86rem var(--display); }
+.bp .md ul { margin: 0; padding-left: 1.1em; }
+.bp .kanban { display: grid; grid-template-columns: repeat(4, minmax(190px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.bp .col { background: var(--sunk); border-radius: 10px; padding: 9px; display: grid; gap: 7px; align-content: start; min-width: 0; }
+.bp .col h3 { font: 600 0.74rem var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; justify-content: space-between; }
+.bp .task { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; display: grid; gap: 5px; font-size: 0.86rem; }
+.bp .task .row { display: flex; gap: 8px; justify-content: space-between; font: 0.7rem var(--mono); color: var(--muted); }
+.bp .task .scope { font: 0.68rem/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.bp .col.doing .task { border-left: 3px solid var(--gate); }
+.bp .list { display: grid; gap: 9px; }
+.bp .item { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px; display: grid; gap: 7px; min-width: 0; }
+.bp .item .row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 0.78rem; color: var(--muted); }
+.bp .item details { border: 0; padding: 0; }
+.bp .quote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--ink); font-size: 0.88rem; }
+.bp .tag { font: 600 0.7rem var(--mono); padding: 3px 7px; border-radius: 5px; background: var(--ask-bg); color: var(--ask); }
+.bp .tag.plain { background: var(--sunk); color: var(--muted); }
+.bp .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.bp table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.84rem; }
+.bp th, .bp td { text-align: left; padding: 7px 11px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.bp th { font: 600 0.68rem var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.bp tr:last-child td { border-bottom: 0; }
+@media (max-width: 760px) { .bp .top { grid-template-columns: 1fr; } .bp { padding: 18px 14px 22px; } }
+/* callout markers on the preview */
+.mk { position: relative; }
+.mk::after { content: attr(data-mk); position: absolute; top: -9px; right: -7px; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: var(--bg); font: 700 0.68rem/20px var(--mono); text-align: center; z-index: 1; }
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px 22px; list-style: none; margin: 0; padding: 0; }
+.keys li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 0.94rem; }
+.keys b.k { width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--bg); font: 700 0.7rem/22px var(--mono); text-align: center; }
+
+/* the gate */
+.pipe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; counter-reset: p; }
+.pipe > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start; position: relative; }
+.pipe > div .eyebrow { color: var(--gate); }
+.pipe ul { margin: 0; padding-left: 1.1em; font-size: 0.92rem; display: grid; gap: 4px; }
+.exits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.exit { border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; border: 1px solid var(--line); background: var(--surface); }
+.exit .pill { justify-self: start; font-size: 0.74rem; }
+@media (max-width: 820px) { .pipe, .exits { grid-template-columns: 1fr; } }
+.anatomy { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+.hdr { font: 600 0.88rem/2 var(--mono); display: flex; flex-wrap: wrap; gap: 2px 0; overflow-x: auto; }
+.hdr .sep { color: var(--muted); padding: 0 6px; }
+.hdr button { background: var(--sunk); border: 1px solid transparent; border-radius: 5px; padding: 0 6px; cursor: pointer; font: inherit; }
+.hdr button[aria-pressed="true"] { border-color: var(--gate); background: var(--gate-bg); color: var(--gate); }
+.hdr .plain { padding: 0 2px; }
+.why { font-size: 0.94rem; min-height: 3em; }
+
+/* fence demo */
+.fence { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.fence .box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.fence label { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font: 0.82rem/1.4 var(--mono); cursor: pointer; overflow-wrap: anywhere; }
+.fence label small { display: block; font-family: var(--body); color: var(--muted); font-size: 0.78rem; }
+.fence input { margin-top: 2px; accent-color: var(--gate); }
+.dtask { border: 1px solid var(--line); border-left: 3px solid var(--gate); border-radius: 8px; padding: 9px 11px; font-size: 0.88rem; display: grid; gap: 3px; }
+.dtask .scope { font: 0.74rem var(--mono); color: var(--muted); }
+#fenceOut { font-size: 0.78rem; }
+@media (max-width: 760px) { .fence { grid-template-columns: 1fr; } }
+
+/* files */
+.explorer { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.tree { list-style: none; margin: 0; padding: 12px 8px; background: var(--sunk); border-right: 1px solid var(--line); font: 0.84rem/1.3 var(--mono); display: grid; gap: 1px; align-content: start; }
+.tree button { width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.tree button span.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree button:hover { background: var(--surface); }
+.tree button[aria-selected="true"] { background: var(--surface); box-shadow: inset 2px 0 0 var(--ink); font-weight: 600; }
+.tree .dir { color: var(--muted); }
+.tree .dot { width: 7px; height: 7px; border-radius: 2px; flex: none; }
+.tree .grp { font: 600 0.62rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 4px; }
+.fileinfo { padding: 20px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.fileinfo h3 { font: 600 1.05rem var(--mono); overflow-wrap: anywhere; }
+.facts3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.facts3 > div { background: var(--sunk); border-radius: 8px; padding: 9px 11px; display: grid; gap: 2px; font-size: 0.88rem; }
+.rev { font-family: var(--mono); letter-spacing: 0.1em; }
+@media (max-width: 760px) { .explorer { grid-template-columns: 1fr; } .tree { border-right: 0; border-bottom: 1px solid var(--line); max-height: 360px; overflow-y: auto; } .facts3 { grid-template-columns: 1fr; } }
+
+/* resume, lessons, commands */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: 1fr; } }
+.resume { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; font-size: 0.94rem; }
+.resume div b { font-family: var(--display); }
+.ladder { display: grid; gap: 8px; }
+.rung { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; align-items: center; }
+.rung p { font-size: 0.92rem; }
+.rung code { justify-self: end; }
+.cmds { display: grid; gap: 8px; }
+.cmdrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 4px 18px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.cmdrow code { font-size: 0.86rem; overflow-wrap: anywhere; }
+.cmdrow span { font-size: 0.94rem; color: var(--muted); }
+@media (max-width: 640px) { .cmdrow { grid-template-columns: 1fr; } }
+footer { font-size: 0.86rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<div class="page">
+
+<header class="hero">
+  <div class="eyebrow">Hafness · field guide</div>
+  <h1>You say <em>what you want</em>. <b>The gate</b> says when it's done.</h1>
+  <p class="lede">Hafness is a harness for AI coding agents, built for one person. It gives the agent a fixed way of working: write down what you asked for, plan which files it will touch, build only inside those files, and prove the result with checks it cannot switch off. Everything it writes is plain markdown, and all of it appears on one board you can open in a browser.</p>
+  <div class="legend" aria-label="Colour key">
+    <span class="role r-you">You</span>
+    <span class="role r-agent">The agent</span>
+    <span class="role r-gate">The gate</span>
+    <span class="role r-check">Passed</span>
+  </div>
+  <nav class="toc" aria-label="On this page">
+    <a href="#loop">The loop</a><a href="#roles">Who decides what</a><a href="#board">The board</a>
+    <a href="#gate">The gate</a><a href="#files">Every file</a><a href="#resume">Picking up later</a><a href="#commands">Commands</a>
+  </nav>
+</header>
+
+<section id="loop">
+  <div class="sec-head">
+    <div class="eyebrow">The loop</div>
+    <h2>Seven steps, three of them optional</h2>
+    <p class="prose">Each step is one command you type in Claude Code. The example follows one person building a habit-tracker iOS app from an empty Xcode project. Pick a step to see what you type, what happens, and where it stops.</p>
+  </div>
+  <ol class="steps" id="steps" role="tablist" aria-label="Loop steps"></ol>
+  <div class="loopback"><span>init → [research] → describe → [review] → plan → implement → [feedback] ↺</span><span class="muted">· square brackets mark optional steps · feedback goes back to implement</span></div>
+  <div class="detail" id="detail" role="tabpanel" aria-live="polite"></div>
+</section>
+
+<section id="roles">
+  <div class="sec-head">
+    <div class="eyebrow">Who decides what</div>
+    <h2>You judge intent. The agent owns the details. The gate holds it to them.</h2>
+  </div>
+  <div class="roles">
+    <div class="rolecol" style="--c: var(--ask)">
+      <span class="role r-you">You decide</span>
+      <ul>
+        <li>What you want built, in your own words.</li>
+        <li>Whether the spec's assumptions are right. Reviewing it is optional.</li>
+        <li>What the gate runs: you read <code>profile.sh</code> once, after setup.</li>
+        <li>Anything risky: force-pushes, migrations, new dependencies, releases, anything that sends a message.</li>
+        <li>Whether to give feedback once it's done. That's optional too.</li>
+      </ul>
+    </div>
+    <div class="rolecol" style="--c: var(--agent)">
+      <span class="role r-agent">The agent handles</span>
+      <ul>
+        <li>Research, when a request would otherwise rest on a guess.</li>
+        <li>Writing the spec, the plan and the tasks.</li>
+        <li>Choosing file paths, and fencing each task to them.</li>
+        <li>Writing the code, task by task.</li>
+        <li>Running the gate, and fixing what fails.</li>
+        <li>Keeping the resume point and the board current.</li>
+      </ul>
+    </div>
+    <div class="rolecol" style="--c: var(--gate)">
+      <span class="role r-gate">The gate enforces</span>
+      <ul>
+        <li>Every harness file keeps its format.</li>
+        <li>Changes stay inside the files the plan named.</li>
+        <li>Your project's own build, test and lint pass.</li>
+        <li>Three failed attempts stop the agent and hand the problem to you.</li>
+        <li>A task is <code>done</code> only with a passing run behind it.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="callout">You are never asked to approve file paths or budgets. Those are the agent's job, and a script checks them. When a check passes, the work is done. Feedback is there for when the result isn't what you meant.</p>
+</section>
+
+<section id="board">
+  <div class="sec-head">
+    <div class="eyebrow">The board</div>
+    <h2>One page that shows everything in flight</h2>
+    <p class="prose">The board is redrawn after every command and every prompt from the markdown files in <code>.hafness/</code>. It's a single self-contained HTML file: open it from disk, or follow the private claude.ai link the agent publishes. This preview uses the real board's layout with example data from the habit tracker, midway through its second feature. The tabs work.</p>
+  </div>
+  <div class="frame">
+    <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="url">habits/.hafness/board.html</span><span class="ex">Example data</span></div>
+    <div class="bp" id="bp">
+      <header class="top">
+        <div class="title"><div class="eyebrow">Hafness board · xcode</div><h1>habits</h1>
+          <div class="facts mk" data-mk="1"><span>Last gate <span class="pill s-FAIL">r-0004 FAIL</span></span><span>In flight: F-002 — Daily reminder at a chosen time (building)</span></div></div>
+        <div class="next mk" data-mk="2"><div class="eyebrow">Next action</div><div><code>/hafness-implement F-002</code>. Attempt 2 of 3: the build failed in <code>NotificationScheduler.swift</code>.</div></div>
+      </header>
+      <nav class="loop mk" data-mk="3" id="bpLoop" aria-label="Loop counts"></nav>
+      <nav class="tabs mk" data-mk="4" role="tablist" id="bpTabs" aria-label="Board tabs"></nav>
+      <div class="panel" id="bpPanel" role="tabpanel"></div>
+    </div>
+  </div>
+  <ol class="keys">
+    <li><b class="k">1</b><span><strong>Status line.</strong> The last gate verdict and the feature being worked on.</span></li>
+    <li><b class="k">2</b><span><strong>Next action.</strong> The single thing to do next, copied from <code>state/current.md</code>.</span></li>
+    <li><b class="k">3</b><span><strong>The loop strip.</strong> A count for each step. It turns amber while work is in progress or feedback is open.</span></li>
+    <li><b class="k">4</b><span><strong>Tabs.</strong> Features, a task kanban, research notes, your feedback, every prompt you typed, and every gate run.</span></li>
+  </ol>
+  <p class="prose muted">The markdown is the source of truth. Edit a spec or a task row by hand and the next redraw shows it. Never edit <code>board.html</code>: the next redraw overwrites it.</p>
+</section>
+
+<section id="gate">
+  <div class="sec-head">
+    <div class="eyebrow">The gate</div>
+    <h2>One script decides pass or fail</h2>
+    <p class="prose"><code>.hafness/verify.sh</code> runs three groups of checks in order and prints one line the agent cannot reword: <code>HAFNESS_VERIFY: PASS</code> or <code>FAIL</code>. If that line is missing, the run counts as a fail.</p>
+  </div>
+  <div class="pipe">
+    <div><span class="eyebrow">1 · Harness format</span><h3>The paperwork is in order</h3>
+      <ul><li>The map stays under 60 lines and names every file.</li><li>Task rows, spec status lines, feedback and run-log headers match their formats.</li><li>A <code>done</code> task cites a run that passed.</li><li>A <code>done</code> spec has no open tasks.</li></ul></div>
+    <div><span class="eyebrow">2 · Scope fence</span><h3>Nothing changed outside the plan</h3>
+      <ul><li>Every changed file must sit inside the Scope of a task in progress.</li><li>The gate's own files (<code>verify.sh</code>, <code>profile.sh</code>, <code>policy.md</code>) count too, unless a task names them.</li></ul></div>
+    <div><span class="eyebrow">3 · Your project</span><h3>It builds, and the tests pass</h3>
+      <ul><li>Build, test, lint and typecheck, exactly as written in <code>profile.sh</code>.</li><li>Any extra checks you added there.</li><li>A profile with nothing runnable refuses to pass.</li></ul></div>
+  </div>
+  <div class="exits">
+    <div class="exit"><span class="pill s-PASS">PASS</span><h3>Done</h3><p>Each task in progress becomes <code>done</code> and carries the run id. The spec becomes <code>done</code>. The agent stops with a card telling you how to try it.</p></div>
+    <div class="exit"><span class="pill s-FAIL">FAIL</span><h3>Fix and retry</h3><p>The agent fixes the failing check and runs the gate again. It never widens the scope or edits the gate to get a pass. The gate counts the attempts itself.</p></div>
+    <div class="exit"><span class="pill s-ESCALATED">ESCALATED</span><h3>Your call</h3><p>The third failure stops the agent. It writes what it tried and what the evidence said, then waits for you.</p></div>
+  </div>
+
+  <div class="anatomy">
+    <div class="eyebrow">Read a run-log header · tap a part</div>
+    <div class="hdr" id="hdr"></div>
+    <p class="why" id="why"></p>
+  </div>
+
+  <div class="sec-head" style="margin-top:8px">
+    <h3>Try the scope fence</h3>
+    <p class="prose muted">Two tasks of F-002 are in progress. Tick the files the agent changed and see what the fence says. The logic matches <code>verify.sh</code>.</p>
+  </div>
+  <div class="fence">
+    <div class="box">
+      <span class="eyebrow">Tasks in progress</span>
+      <div class="dtask"><span><b>T-006</b> Schedule the daily notification</span><span class="scope">Scope: Habits/Notifications/</span></div>
+      <div class="dtask"><span><b>T-007</b> Reminder time picker in Settings</span><span class="scope">Scope: Habits/Views/Settings/</span></div>
+    </div>
+    <div class="box">
+      <span class="eyebrow">Changed files</span>
+      <div id="fenceFiles" style="display:grid;gap:8px"></div>
+      <pre id="fenceOut"></pre>
+    </div>
+  </div>
+</section>
+
+<section id="files">
+  <div class="sec-head">
+    <div class="eyebrow">Every file</div>
+    <h2>What setup adds to your project</h2>
+    <p class="prose">Everything lives in one <code>.hafness/</code> folder, plus two short pointer files and one hook. It's all markdown or shell, so you can read every file before anything runs. Pick a file to see its job, who writes it, and whether you need to read it.</p>
+    <p class="muted" style="font-size:.9rem">Review: <span class="rev">●●●</span> read before anything runs · <span class="rev">●</span> read once · <span class="rev">○</span> read when curious · <span class="rev">—</span> never</p>
+  </div>
+  <div class="explorer">
+    <ul class="tree" id="tree" role="tablist" aria-label="Files"></ul>
+    <div class="fileinfo" id="fileinfo" role="tabpanel" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="resume">
+  <div class="two">
+    <div class="sec-head">
+      <div class="eyebrow">Picking up later</div>
+      <h2>A new session never has to ask where you were</h2>
+      <p class="prose">Open a new terminal with no chat history. The agent reads <code>state/current.md</code>, checks whether the last session stopped halfway through a task, and prints four lines before it touches any code. You don't have to explain anything again, and that's the test of the whole harness.</p>
+    </div>
+    <div class="resume" aria-label="Example resume point">
+      <span class="eyebrow">Example · what the agent prints</span>
+      <div><b>In flight</b> · F-002 — Daily reminder at a chosen time (building)</div>
+      <div><b>Next action</b> · <code>/hafness-implement F-002</code>, attempt 2 of 3</div>
+      <div><b>Open risks</b> · No UI test target, so the gate only builds and runs unit tests</div>
+      <div><b>Board</b> · claude.ai/artifact/…</div>
+    </div>
+  </div>
+</section>
+
+<section id="lessons">
+  <div class="two">
+    <div class="sec-head">
+      <div class="eyebrow">When something goes wrong twice</div>
+      <h2>Turn the lesson into a boundary</h2>
+      <p class="prose">Write what happened in <code>log/journal.md</code>, then put the fix where it belongs. A rule the agent keeps ignoring is a sign it should have been a check.</p>
+    </div>
+    <div class="ladder">
+      <div class="rung"><p><strong>A judgement call.</strong> Loaded only when a plan touches that area.</p><code>rules/swift.md</code></div>
+      <div class="rung"><p><strong>Checkable by a script.</strong> Becomes one more line the gate runs.</p><code>HAF_EXTRA</code></div>
+      <div class="rung"><p><strong>Must never happen.</strong> The agent stops and asks, every time.</p><code>policy.md</code></div>
+      <pre><span class="c"># profile.sh: a lesson promoted to a check</span>
+HAF_EXTRA=(
+  "no-ui-in-models|! grep -rl 'import SwiftUI' Habits/Models"
+)</pre>
+    </div>
+  </div>
+</section>
+
+<section id="commands">
+  <div class="sec-head">
+    <div class="eyebrow">Commands</div>
+    <h2>Install once, then seven commands</h2>
+  </div>
+  <div class="cmd"><code>npx skills add hafshy/hafness -a claude-code -y</code><button class="copy" type="button" data-copy="npx skills add hafshy/hafness -a claude-code -y">Copy</button></div>
+  <div class="cmds">
+    <div class="cmdrow"><code>/hafness-init</code><span>Once per project. Sets up <code>.hafness/</code>, finds your build and test commands, draws the first board.</span></div>
+    <div class="cmdrow"><code>/hafness-research &lt;topic&gt;</code><span>Optional. A sourced one-page note before you commit to anything.</span></div>
+    <div class="cmdrow"><code>/hafness-describe &lt;what you want&gt;</code><span>Your idea becomes a spec: what it does and why, never which files.</span></div>
+    <div class="cmdrow"><code>reviewed</code><span>Optional. Say it after reading a spec to mark it reviewed.</span></div>
+    <div class="cmdrow"><code>/hafness-plan F-001</code><span>The spec becomes a plan and a list of tasks, each fenced to its files.</span></div>
+    <div class="cmdrow"><code>/hafness-implement F-001</code><span>Builds task by task and runs the gate. A pass makes the spec done.</span></div>
+    <div class="cmdrow"><code>/hafness-feedback F-001 &lt;what you saw&gt;</code><span>Optional. Turns what you saw into new tasks and reopens the spec.</span></div>
+  </div>
+</section>
+
+<footer>Hafness v1. The source is <a href="https://github.com/hafshy/hafness">github.com/hafshy/hafness</a>. Every example on this page is illustrative: the habit tracker, its tasks and its runs.</footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ROLE = { you: ["r-you", "You", "var(--ask)"], agent: ["r-agent", "The agent", "var(--agent)"], gate: ["r-gate", "The gate", "var(--gate)"] };
+
+/* ---------- the loop ---------- */
+const STEPS = [
+  { key: "init", name: "Init", cmd: "/hafness-init", who: "agent", when: "Once per project",
+    does: ["Copies the .hafness/ folder into your project.", "Detects your stack and writes profile.sh, using only commands it actually found on your machine.", "Installs a hook that logs every prompt to history.md, and keeps that log out of git.", "Runs the gate once and draws the first board."],
+    writes: [".hafness/", "profile.sh", ".claude/settings.json", ".gitignore"],
+    stop: "Read profile.sh before anything runs. It's the list of commands that decide pass or fail. An empty line is honest: it found no test target, so it wrote none.",
+    file: ".hafness/profile.sh",
+    ex: `HAF_STACK="xcode"        <c># found: Habits.xcodeproj</c>
+HAF_BUILD="xcodebuild -scheme Habits \\
+  -destination 'generic/platform=iOS Simulator' build"
+                         <c># found: xcodebuild -list</c>
+HAF_TEST=""              <c># no test target in xcodebuild -list</c>
+HAF_LINT=""              <c># no .swiftlint.yml</c>` },
+  { key: "research", name: "Research", cmd: "/hafness-research <topic>", who: "agent", optional: true, when: "Before you commit to anything",
+    does: ["Looks at how others solve it, what the platform already provides, and what your project already has.", "Every finding names its source. Anything without a source is labelled as an assumption.", "Describe and plan also do this on their own when a request would otherwise rest on a guess."],
+    writes: ["research/<slug>.md"],
+    stop: "You get a one-line recommendation and a note on the board. Describe the feature when you're ready.",
+    file: ".hafness/research/streak-day-boundaries.md",
+    ex: `# When does a habit's day end?
+
+## Findings
+- Most streak apps count by the device's local calendar
+  day, not 24-hour windows. <c>(source: app docs)</c>
+- Calendar.current.isDateInToday handles DST.
+  <c>(source: Apple Foundation docs)</c>
+
+## Recommendation
+Count by local calendar day; store check-offs as dates.` },
+  { key: "describe", name: "Describe", cmd: "/hafness-describe habit tracker: create habits, check them off daily, see a streak per habit", who: "you", when: "Each new feature",
+    does: ["Asks questions only if an answer would change what gets built: at most five, one at a time, each with a suggested default.", "Writes a spec in your language: requirements, how you'll know it works, what's out of scope, and every assumption it made.", "Never names files or frameworks unless you did. That's the plan's job."],
+    writes: ["specs/F-001.md", "status: draft"],
+    stop: "Check the Assumptions first. Edit anything, or tell it what to change.",
+    file: ".hafness/specs/F-001.md",
+    ex: `# F-001 — Habits with daily check-off and streaks
+
+Status: draft
+
+## Requirements
+- R1 When I add a habit, the app shall list it on the home screen.
+- R2 When I check a habit off, the app shall count today as done.
+- R3 When I open a habit, the app shall show its streak in days.
+
+## How you'll know
+- Add "Read", check it off, reopen the app: still checked today.
+
+## Assumptions
+- Data stays on the device; no account, no sync.` },
+  { key: "review", name: "Review", cmd: "reviewed", who: "you", optional: true, when: "Any time before planning",
+    does: ["You read the spec on the board, Assumptions first.", "Edit the markdown directly if you like. Your edit wins.", "Say \"reviewed\" and the status changes. Planning works with or without it."],
+    writes: ["specs/F-001.md", "status: reviewed"],
+    stop: "Nothing to approve beyond intent. You're checking that it understood you, not how it will build.",
+    file: ".hafness/specs/F-001.md",
+    ex: `# F-001 — Habits with daily check-off and streaks
+
+Status: reviewed
+
+## Assumptions
+- Data stays on the device; no account, no sync.
+- A streak counts calendar days, not 24-hour windows.  <c>← you added this</c>` },
+  { key: "plan", name: "Plan", cmd: "/hafness-plan F-001", who: "agent", when: "After describing",
+    does: ["Reads your code now, for the first time.", "Writes the approach, the real files that will change, the tempting files it won't touch, the risks, and how each \"How you'll know\" item will be shown.", "Splits the work into small tasks. Each task's Scope is a fence: the gate fails on any change outside it."],
+    writes: ["plans/F-001.md", "rows in tasks.md"],
+    stop: "Edit anything you disagree with. Otherwise, implement.",
+    file: ".hafness/tasks.md",
+    ex: `| ID    | Spec  | Task                              | Status | Scope                   | Run |
+| T-001 | F-001 | Habit model and local store       | todo   | Habits/Models/          | —   |
+| T-002 | F-001 | Habit list screen, add and delete | todo   | Habits/Views/HabitList/ | —   |
+| T-003 | F-001 | Daily check-off                   | todo   | Habits/Models/, …       | —   |
+| T-004 | F-001 | Streak calculation and display    | todo   | Habits/Views/HabitDetail/ | — |` },
+  { key: "implement", name: "Implement", cmd: "/hafness-implement F-001", who: "gate", when: "After planning",
+    does: ["Asks for a clean git tree first, so the fence has a fair baseline.", "Moves each task to doing (you can watch it on the board) and works inside its Scope only.", "Runs the logged gate. PASS makes the tasks and the spec done. FAIL means fix and retry. The third failure escalates to you.", "Needs a file outside every Scope? It stops and asks. It never widens the fence itself."],
+    writes: ["your code", "log/<today>.md", "tasks: done + run id", "spec: done"],
+    stop: "A card tells you what changed, how to see it, what stayed untouched, and anything it couldn't verify. Try it.",
+    file: "gate output",
+    ex: `--- harness format     ok
+--- scope fence        ok
+--- build              ok
+--- test               skipped — not found in this project
+HAFNESS_VERIFY: PASS
+HAFNESS_RUN: r-0002` },
+  { key: "feedback", name: "Feedback", cmd: "/hafness-feedback F-001 streak resets if I check off after midnight", who: "you", optional: true, when: "Only when it isn't what you meant",
+    does: ["Records your words exactly, then how it read them.", "If the behaviour changes, it updates the spec first. The spec stays the source of truth.", "Adds tasks that revise what was built, updates the plan, and reopens the spec. Then implement again, with a fresh budget of three attempts.", "Sounds like a new feature instead? It asks: reopen this spec, or start a new one."],
+    writes: ["feedback.md", "new tasks", "spec: planned"],
+    stop: "If it's right, do nothing: it's already done. Next idea: /hafness-describe …",
+    file: ".hafness/feedback.md",
+    ex: `## FB-001 · 2026-10-08 · F-001 · planned
+
+> streak resets if I check off after midnight
+
+**Read as** a check-off just after midnight counted toward
+the next day and broke the streak. Count by local calendar day.
+
+**Tasks** T-005` },
+];
+const stepsEl = $("#steps");
+stepsEl.innerHTML = STEPS.map((s, i) => `<li class="${s.optional ? "optional" : ""}"><button role="tab" type="button" id="st-${s.key}" data-i="${i}" aria-selected="false">
+  <span class="n">${i + 1}${s.optional ? " · optional" : ""}</span><span class="nm">${s.name}</span><span class="bar" style="background:${ROLE[s.who][2]}"></span></button></li>`).join("");
+const hl = t => esc(t).replace(/&lt;c&gt;/g, '<span class="c">').replace(/&lt;\/c&gt;/g, "</span>");
+function showStep(i) {
+  const s = STEPS[i], r = ROLE[s.who];
+  stepsEl.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.i == i));
+  $("#detail").innerHTML = `<div class="left">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="role ${r[0]}">${s.who === "gate" ? "The agent, held by the gate" : s.who === "you" ? "Starts with you" : "The agent"}</span><span class="muted" style="font-size:.86rem">${esc(s.when)}</span></div>
+      <h3>${esc(s.name)}</h3>
+      <div class="kv"><span class="k">You type</span><div class="cmd"><code>${esc(s.cmd)}</code><button class="copy" type="button" data-copy="${esc(s.cmd)}">Copy</button></div></div>
+      <div class="kv"><span class="k">What happens</span><ul>${s.does.map(d => `<li>${esc(d)}</li>`).join("")}</ul></div>
+      <div class="kv"><span class="k">Writes</span><div style="display:flex;flex-wrap:wrap;gap:6px">${s.writes.map(w => `<code>${esc(w)}</code>`).join("")}</div></div>
+      <div class="stopcard"><strong>Then it stops.</strong> ${esc(s.stop)}</div>
+    </div>
+    <div class="right"><span class="eyebrow">Example · ${esc(s.file)}</span><pre>${hl(s.ex)}</pre></div>`;
+}
+stepsEl.addEventListener("click", e => { const b = e.target.closest("button"); if (b) showStep(+b.dataset.i); });
+stepsEl.addEventListener("keydown", e => {
+  if (!["ArrowRight", "ArrowLeft"].includes(e.key)) return;
+  const cur = [...stepsEl.querySelectorAll("button")].findIndex(b => b.getAttribute("aria-selected") === "true");
+  const n = (cur + (e.key === "ArrowRight" ? 1 : STEPS.length - 1)) % STEPS.length;
+  showStep(n); stepsEl.querySelectorAll("button")[n].focus();
+});
+showStep(2);
+
+/* ---------- board preview (example data) ---------- */
+const SPECS = [
+  { id: "F-001", title: "Habits with daily check-off and streaks", status: "done",
+    spec: `<h4>Requirements</h4><ul><li>R1 When I add a habit, the app shall list it on the home screen.</li><li>R2 When I check a habit off, the app shall count today as done for it.</li><li>R3 When I open a habit, the app shall show its current streak in days.</li><li>R4 A check-off counts toward the local calendar day it was made on. <span class="muted">(added by FB-001)</span></li></ul><h4>How you'll know</h4><ul><li>Add "Read", check it off, reopen the app: still checked today.</li></ul>`,
+    plan: `<h4>Approach</h4><p>SwiftData model for habits and check-off dates; the streak is computed from dates, never stored.</p><h4>Not touching</h4><ul><li><code>Habits/App/</code>: the app entry point stays as Xcode made it.</li></ul><h4>Budget</h4><p>Attempts: 3</p>` },
+  { id: "F-002", title: "Daily reminder at a chosen time", status: "building",
+    spec: `<h4>Requirements</h4><ul><li>R1 When I pick a reminder time, the app shall notify me daily at that time.</li><li>R2 When every habit is checked off, the app shall skip that day's reminder.</li></ul>`,
+    plan: `<h4>Approach</h4><p>One repeating local notification, rescheduled whenever check-offs change.</p><h4>Budget</h4><p>Attempts: 3</p>` },
+  { id: "F-003", title: "Weekly summary screen", status: "draft",
+    spec: `<h4>Requirements</h4><ul><li>R1 When I open Summary, the app shall show each habit's last seven days.</li></ul><h4>Assumptions</h4><ul><li>Weeks start on Monday.</li></ul>` },
+];
+const TASKS = [
+  ["T-001", "F-001", "Habit model and local store", "done", "Habits/Models/", "r-0002"],
+  ["T-002", "F-001", "Habit list screen, add and delete", "done", "Habits/Views/HabitList/", "r-0002"],
+  ["T-003", "F-001", "Daily check-off", "done", "Habits/Models/, Habits/Views/HabitList/", "r-0002"],
+  ["T-004", "F-001", "Streak calculation and display", "done", "Habits/Models/Streak.swift, Habits/Views/HabitDetail/", "r-0002"],
+  ["T-005", "F-001", "Count check-offs by local calendar day", "done", "Habits/Models/Streak.swift", "r-0003"],
+  ["T-006", "F-002", "Schedule the daily notification", "doing", "Habits/Notifications/", "—"],
+  ["T-007", "F-002", "Reminder time picker in Settings", "doing", "Habits/Views/Settings/", "—"],
+  ["T-008", "F-002", "Skip the reminder when all habits are done", "todo", "Habits/Notifications/", "—"],
+].map(([id, spec, task, status, scope, run]) => ({ id, spec, task, status, scope, run }));
+const RUNS = [
+  ["r-0004", "2026-10-09 10:12", "F-002", "1/3", "FAIL", "2m44s"],
+  ["r-0003", "2026-10-08 16:40", "F-001", "1/3", "PASS", "1m58s"],
+  ["r-0002", "2026-10-07 11:05", "F-001", "2/3", "PASS", "2m31s"],
+  ["r-0001", "2026-10-07 10:31", "F-001", "1/3", "FAIL", "2m10s"],
+];
+const FEEDBACK = [{ id: "FB-001", date: "2026-10-08", spec: "F-001", status: "done", quote: "streak resets if I check off after midnight", read: "A check-off just after midnight counted toward the next day and broke the streak. Count by local calendar day.", tasks: "T-005" }];
+const HISTORY = [
+  ["2026-10-09 10:02", "implement", "/hafness-implement F-002"],
+  ["2026-10-09 09:48", "plan", "/hafness-plan F-002"],
+  ["2026-10-09 09:40", "describe", "/hafness-describe remind me once a day at a time I pick, but not if I already did everything"],
+  ["2026-10-09 09:37", "prompt", "does the reminder need notification permission on first launch?"],
+  ["2026-10-08 16:31", "feedback", "/hafness-feedback F-001 streak resets if I check off after midnight"],
+  ["2026-10-07 10:20", "describe", "/hafness-describe habit tracker: create habits, check them off daily, see a streak per habit"],
+];
+const RESEARCH = [{ path: "research/streak-day-boundaries.md", title: "When does a habit's day end?", body: "<ul><li>Most streak apps count by the device's local calendar day, not 24-hour windows.</li><li><code>Calendar.current.isDateInToday</code> handles daylight-saving changes.</li></ul><p><strong>Recommendation</strong> Count by local calendar day; store check-offs as dates.</p>" }];
+
+const STAGES = ["draft", "reviewed", "planned", "building", "done"], STAGE_LABEL = ["Described", "Reviewed", "Planned", "Building", "Done"];
+const taskCard = t => `<div class="task"><div class="row"><span>${t.id} · ${t.spec}</span><span>${t.run !== "—" ? t.run : ""}</span></div><div>${esc(t.task)}</div><div class="scope">${esc(t.scope)}</div></div>`;
+const count = s => SPECS.filter(x => x.status === s).length;
+$("#bpLoop").innerHTML = [
+  ["Research", RESEARCH.length, "notes", "/hafness-research"],
+  ["Describe", SPECS.length, "specs", "/hafness-describe"],
+  ["Review", count("draft"), "waiting for review", "optional"],
+  ["Plan", TASKS.filter(t => t.status === "todo").length, "tasks to do", "/hafness-plan"],
+  ["Implement", TASKS.filter(t => t.status === "doing").length, "in progress", "/hafness-implement"],
+  ["Feedback", FEEDBACK.filter(f => f.status === "open" || f.status === "planned").length, "open feedback", "optional"],
+].map(([n, v, what, cmd]) => `<div class="stage ${v && (n === "Implement" || n === "Feedback") ? "hot" : ""}"><span>${n}</span><b>${v}</b><span>${what}</span><code>${cmd}</code></div>`).join("");
+
+const PANELS = {
+  features: ["Features", SPECS.length, () => `<div class="features">${SPECS.map(s => {
+    const ts = TASKS.filter(t => t.spec === s.id), done = ts.filter(t => t.status === "done").length, at = STAGES.indexOf(s.status);
+    const run = RUNS.find(r => r[2] === s.id);
+    return `<article class="feature"><div class="fhead"><span class="id">${s.id}</span><h3>${esc(s.title)}</h3><span class="pill s-${s.status}">${s.status}</span></div>
+      <ol class="track ${s.status === "done" ? "done" : ""}">${STAGE_LABEL.map((l, i) => `<li class="${i < at ? "on" : i === at ? "now" : ""}">${l}</li>`).join("")}</ol>
+      <div class="fmeta"><span>${done}/${ts.length} tasks done</span>${run ? `<span>last run ${run[0]} ${run[4]}</span>` : ""}</div>
+      <details><summary>Spec</summary><div class="md">${s.spec}</div></details>
+      ${s.plan ? `<details><summary>Plan</summary><div class="md">${s.plan}</div></details>` : ""}
+      ${ts.length ? `<details><summary>Tasks</summary><div class="list">${ts.map(taskCard).join("")}</div></details>` : ""}</article>`; }).join("")}</div>`],
+  tasks: ["Tasks", TASKS.length, () => `<div class="kanban">${["todo", "doing", "done", "blocked"].map(st => { const c = TASKS.filter(t => t.status === st);
+    return `<section class="col ${st}"><h3>${st}<span>${c.length}</span></h3>${c.map(taskCard).join("") || `<span class="muted" style="font-size:.8rem">Nothing here.</span>`}</section>`; }).join("")}</div>`],
+  research: ["Research", RESEARCH.length, () => `<div class="list">${RESEARCH.map(r => `<div class="item"><details open><summary>${esc(r.title)}</summary><div class="md">${r.body}</div></details><div class="row mono">${r.path}</div></div>`).join("")}</div>`],
+  feedback: ["Feedback", FEEDBACK.length, () => `<div class="list">${FEEDBACK.map(f => `<div class="item"><div class="row"><b>${f.id}</b><span>${f.spec}</span><span>${f.date}</span><span class="pill s-${f.status}">${f.status}</span></div>
+    <div class="quote">${esc(f.quote)}</div><div style="font-size:.88rem"><strong>Read as</strong> ${esc(f.read)}</div><div class="row">Tasks ${f.tasks}</div></div>`).join("")}</div>`],
+  history: ["History", HISTORY.length, () => `<div class="list">${HISTORY.map(([when, tag, text]) => `<div class="item"><div class="row"><span class="mono">${when}</span><span class="tag ${tag === "prompt" ? "plain" : ""}">${tag}</span></div><div style="overflow-wrap:anywhere">${esc(text)}</div></div>`).join("")}</div>`],
+  runs: ["Runs", RUNS.length, () => `<div class="scroll"><table><thead><tr><th>Run</th><th>When</th><th>Spec</th><th>Attempt</th><th>Verdict</th><th>Took</th></tr></thead><tbody>${RUNS.map(r =>
+    `<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td><span class="pill s-${r[4]}">${r[4]}</span></td><td>${r[5]}</td></tr>`).join("")}</tbody></table></div>`],
+};
+const bpTabs = $("#bpTabs");
+bpTabs.innerHTML = Object.entries(PANELS).map(([k, p]) => `<button role="tab" type="button" data-k="${k}">${p[0]}<span class="count">${p[1]}</span></button>`).join("");
+function showPanel(k) { bpTabs.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.k === k)); $("#bpPanel").innerHTML = PANELS[k][2](); }
+bpTabs.addEventListener("click", e => { const b = e.target.closest("button"); if (b) showPanel(b.dataset.k); });
+showPanel("features");
+
+/* ---------- run-log header anatomy ---------- */
+const PARTS = [
+  ["## r-0004", "The run id. The gate numbers runs itself, so ids never collide or get reused. A task marked done must cite one of these, and it must be a PASS."],
+  ["10:12", "When the run started, local time. Each day's runs go in log/2026-10-09.md, oldest first."],
+  ["F-002", "The spec this run was for."],
+  ["attempt 1/3", "The gate counts this itself: this spec's runs since its last PASS, plus one. The budget comes from the plan. The agent can't reset it by passing a different number."],
+  ["FAIL", "The verdict: PASS, FAIL, or ESCALATED once a failure uses up the budget."],
+  ["2m44s", "How long the checks took."],
+];
+const hdr = $("#hdr");
+hdr.innerHTML = PARTS.map(([t], i) => (i ? '<span class="sep">·</span>' : "") + `<button type="button" aria-pressed="false" data-i="${i}">${esc(t)}</button>`).join("");
+function part(i) { hdr.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.i == i)); $("#why").textContent = PARTS[i][1]; }
+hdr.addEventListener("click", e => { const b = e.target.closest("button"); if (b) part(+b.dataset.i); });
+part(3);
+
+/* ---------- scope fence demo (same rule as verify.sh) ---------- */
+const SCOPES = ["Habits/Notifications/", "Habits/Views/Settings/"];
+const FILES = [
+  ["Habits/Notifications/NotificationScheduler.swift", true, "inside T-006"],
+  ["Habits/Views/Settings/ReminderPicker.swift", true, "inside T-007"],
+  [".hafness/tasks.md", true, "harness bookkeeping is always allowed"],
+  ["Habits/Models/Habit.swift", false, "tempting, but no task in progress covers it"],
+  [".hafness/profile.sh", false, "the gate's own config: no task names it"],
+];
+const GUARDED = [".hafness/verify.sh", ".hafness/profile.sh", ".hafness/policy.md"];
+function inScope(f) {
+  if (GUARDED.includes(f)) return SCOPES.includes(f);
+  if (f.startsWith(".hafness/") || f === "CLAUDE.md" || f === "AGENTS.md") return true;
+  return SCOPES.some(p => p.endsWith("/") ? f.startsWith(p) : f === p);
+}
+$("#fenceFiles").innerHTML = FILES.map(([f, on, note], i) => `<label for="ff${i}"><input type="checkbox" id="ff${i}" data-f="${esc(f)}" ${on ? "checked" : ""}><span>${esc(f)}<small>${esc(note)}</small></span></label>`).join("");
+function fence() {
+  const changed = [...document.querySelectorAll("#fenceFiles input:checked")].map(i => i.dataset.f), out = changed.filter(f => !inScope(f));
+  $("#fenceOut").innerHTML = out.length
+    ? `--- scope fence\n    changed outside the Scope of every doing task:\n${out.map(f => "      " + esc(f)).join("\n")}\n    <span style="color:#F2867E">FAILED (scope fence)</span>`
+    : `--- scope fence\n    <span style="color:#66C79B">ok</span>`;
+}
+$("#fenceFiles").addEventListener("change", fence); fence();
+
+/* ---------- file explorer ---------- */
+const GROUPS = { root: ["Next to your code", "var(--muted)"], session: ["Read every session", "var(--ask)"], work: ["The work", "var(--agent)"], gate: ["The gate", "var(--gate)"], board: ["Board and history", "var(--check)"], ledger: ["Policy, rules and ledger", "var(--bad)"] };
+const FILESYS = [
+  { p: "CLAUDE.md", d: 0, g: "root", job: "Three lines telling Claude to read .hafness/HAFNESS.md first. A pointer, never a second set of instructions.", by: "/hafness-init (added to the top if one exists)", rev: "●", ex: "# Agent entry point\n\nRead `.hafness/HAFNESS.md` before anything else." },
+  { p: "AGENTS.md", d: 0, g: "root", job: "The same pointer, for agents other than Claude.", by: "/hafness-init", rev: "●", ex: "# Agent entry point\n\nRead `.hafness/HAFNESS.md` before anything else." },
+  { p: ".claude/settings.json", d: 0, g: "root", job: "Gains one prompt hook that runs .hafness/history.sh. Your existing settings and hooks are kept.", by: "/hafness-init (merged, never overwritten)", rev: "●", ex: '{ "hooks": { "UserPromptSubmit": [ { "hooks": [\n  { "type": "command",\n    "command": "bash \\"$CLAUDE_PROJECT_DIR/.hafness/history.sh\\"" }\n] } ] } }' },
+  { p: ".gitignore", d: 0, g: "root", job: "Gains two lines, so your prompt history and the board that embeds it stay on your machine. Delete them if you want them committed.", by: "/hafness-init", rev: "○", ex: ".hafness/history.md\n.hafness/board.html" },
+  { p: ".hafness/", d: 0, dir: true },
+  { p: "HAFNESS.md", d: 1, g: "session", job: "The map: the loop, every file and its job, and what done means. Capped at 60 lines and checked, so it stays a map instead of turning into a manual.", by: "/hafness-init", rev: "●", ex: "## Start every session\n\n1. Read `state/current.md`.\n2. Read the `tasks.md` table and the spec in flight.\n3. Print the next action. Do not open a source file before this." },
+  { p: "state/current.md", d: 1, g: "session", job: "The resume point: what's in flight, the next action, open risks, the last run, and the board link. Every command rewrites it when it finishes.", by: "every command, at the end", rev: "●", ex: "## In flight\nF-002 — Daily reminder at a chosen time (building)\n\n## Next action\n/hafness-implement F-002, attempt 2 of 3\n\n## Last run\nr-0004 · FAIL · 2026-10-09" },
+  { p: "state/decisions.md", d: 1, g: "session", job: "Every decision, what it rejected, and why. When it disagrees with something said in chat, this file wins.", by: "the agent, as it decides", rev: "○", ex: "## 2026-10-09 — one repeating notification\nContext: R2 needs the reminder skipped on finished days.\nChose: one repeating notification, rescheduled on check-off.\nRejected: 64 pre-scheduled notifications (the iOS limit)." },
+  { p: "research/", d: 1, g: "work", job: "One sourced note per topic: findings, options, a recommendation, sources.", by: "/hafness-research, or describe and plan when needed", rev: "○", ex: "# When does a habit's day end?\n\n## Recommendation\nCount by local calendar day; store check-offs as dates." },
+  { p: "specs/", d: 1, g: "work", job: "One spec per feature: what it does and why, never which files. The first line and the Status line are checked.", by: "/hafness-describe", rev: "● Assumptions first", ex: "# F-002 — Daily reminder at a chosen time\n\nStatus: building" },
+  { p: "plans/", d: 1, g: "work", job: "One plan per spec: approach, files, files it won't touch, risks, verification, attempt budget.", by: "/hafness-plan, updated by /hafness-feedback", rev: "○", ex: "## Not touching\n- `Habits/Models/`: reminders read habits, never change them.\n\n## Budget\nAttempts: 3" },
+  { p: "tasks.md", d: 1, g: "work", job: "Every task for every spec, with status, Scope and run id. The Scope column is the fence the gate enforces.", by: "/hafness-plan, /hafness-feedback, /hafness-implement", rev: "○", ex: "| ID    | Spec  | Task                            | Status | Scope                  | Run |\n| T-006 | F-002 | Schedule the daily notification | doing  | Habits/Notifications/  | —   |" },
+  { p: "feedback.md", d: 1, g: "work", job: "Your feedback, quoted exactly, how the agent read it, and the tasks it became.", by: "/hafness-feedback", rev: "○", ex: "## FB-001 · 2026-10-08 · F-001 · done\n\n> streak resets if I check off after midnight" },
+  { p: "profile.sh", d: 1, g: "gate", job: "Exactly which commands decide pass or fail. The highest-stakes file in the harness: a wrong command here makes every later result meaningless.", by: "/hafness-init, then you", rev: "●●●", ex: 'HAF_STACK="xcode"\nHAF_BUILD="xcodebuild -scheme Habits … build"\nHAF_TEST=""\nHAF_EXTRA=(\n  "no-ui-in-models|! grep -rl \'import SwiftUI\' Habits/Models"\n)' },
+  { p: "verify.sh", d: 1, g: "gate", job: "The gate: format checks, then the scope fence, then whatever profile.sh declares. One exit code and one verdict line.", by: "shipped with Hafness, rarely edited", rev: "● when it changes", ex: "bash .hafness/verify.sh            # check only\nbash .hafness/verify.sh --log F-002 # check and write a run block" },
+  { p: "board.sh", d: 1, g: "board", job: "Builds board.html from the markdown. Runs after every command and every prompt.", by: "shipped with Hafness", rev: "—", ex: "bash .hafness/board.sh\nboard: …/.hafness/board.html" },
+  { p: "board.html", d: 1, g: "board", job: "The board. Generated, self-contained, opens from disk. Never edit it by hand.", by: "board.sh only", rev: "open it", ex: "Features · Tasks · Research · Feedback · History · Runs" },
+  { p: "history.sh", d: 1, g: "board", job: "The prompt hook. Appends each prompt to history.md, tags Hafness commands, redraws the board. It never prints and never blocks a prompt.", by: "shipped with Hafness", rev: "—", ex: "/hafness-describe …  →  tagged `describe`\nanything else        →  tagged prompt" },
+  { p: "history.md", d: 1, g: "board", job: "Every prompt you typed in this project. Gitignored by default. If you paste a secret, delete the entry and rotate the secret.", by: "history.sh", rev: "○", ex: "## 2026-10-09 09:40 · `describe`\n\n> /hafness-describe remind me once a day at a time I pick" },
+  { p: "policy.md", d: 1, g: "ledger", job: "What always needs your yes (force-push, migrations, releases, new dependencies, anything that sends) and what never happens at all (reading secrets, disabling a check to pass).", by: "you", rev: "● once", ex: "## Stop and ask\n- Installing a dependency not already in the lockfile\n\n## Never\n- Disabling a check to make verify.sh pass" },
+  { p: "rules/", d: 1, g: "ledger", job: "Rules for one area, like swift.md or testing.md. Loaded only when a plan touches those paths.", by: "you, from lessons learned", rev: "○", ex: "# Swift\n- Views never write to the store directly; go through the model." },
+  { p: "log/<date>.md", d: 1, g: "ledger", job: "One block per gate run. The header is written by the gate itself; the agent adds which tasks ran, what changed, and what's next. Append only.", by: "verify.sh --log, then /hafness-implement", rev: "○", ex: "## r-0004 · 10:12 · F-002 · attempt 1/3 · FAIL · 2m44s\n\n**Verdict** `HAFNESS_VERIFY: FAIL` (exit 1)\n**Failed check** build: NotificationScheduler.swift:41" },
+  { p: "log/journal.md", d: 1, g: "ledger", job: "Lessons from runs that failed or passed badly, and where each one was promoted.", by: "you or the agent", rev: "○", ex: "## 2026-10-09 — UNUserNotificationCenter needs the main actor\nPromoted to: rules/swift.md" },
+];
+const tree = $("#tree");
+let lastG = "";
+tree.innerHTML = FILESYS.map((f, i) => {
+  if (f.dir) { lastG = ""; return `<li class="dir" style="padding:10px 8px 2px">${f.p}</li>`; }
+  const head = f.g !== lastG ? `<li class="grp" style="padding-left:${8 + f.d * 14}px">${GROUPS[f.g][0]}</li>` : ""; lastG = f.g;
+  return `${head}<li><button role="tab" type="button" data-i="${i}" aria-selected="false" style="padding-left:${8 + f.d * 14}px"><span class="dot" style="background:${GROUPS[f.g][2]}"></span><span class="nm">${f.p}</span></button></li>`;
+}).join("");
+function showFile(i) {
+  const f = FILESYS[i];
+  tree.querySelectorAll("button").forEach(b => b.setAttribute("aria-selected", b.dataset.i == i));
+  $("#fileinfo").innerHTML = `<div class="eyebrow" style="color:${GROUPS[f.g][2]}">${GROUPS[f.g][0]}</div>
+    <h3>${f.d ? ".hafness/" : ""}${esc(f.p)}</h3><p>${esc(f.job)}</p>
+    <div class="facts3"><div><span class="eyebrow">Written by</span>${esc(f.by)}</div><div><span class="eyebrow">Review</span><span class="rev">${esc(f.rev)}</span></div><div><span class="eyebrow">Format</span>${f.p.endsWith(".sh") ? "shell" : f.p.endsWith(".json") ? "JSON" : f.p === "board.html" ? "generated HTML" : f.p === ".gitignore" ? "plain text" : "markdown"}</div></div>
+    <div style="display:grid;gap:6px"><span class="eyebrow">Example</span><pre>${esc(f.ex)}</pre></div>`;
+}
+tree.addEventListener("click", e => { const b = e.target.closest("button"); if (b) showFile(+b.dataset.i); });
+showFile(FILESYS.findIndex(f => f.p === "profile.sh"));
+
+/* ---------- copy buttons ---------- */
+document.addEventListener("click", async e => {
+  const b = e.target.closest(".copy"); if (!b) return;
+  const t = b.dataset.copy;
+  try { await navigator.clipboard.writeText(t); b.textContent = "Copied"; }
+  catch { const code = b.previousElementSibling; const r = document.createRange(); r.selectNodeContents(code); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; }
+  setTimeout(() => { b.textContent = "Copy"; }, 1600);
+});
+</script>
+</html>

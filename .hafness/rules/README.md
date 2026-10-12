@@ -1,6 +1,6 @@
 # Rules
 
-One file per domain. Loaded **only** when the current contract's file scope implicates it.
+One file per domain. Loaded **only** when the current plan's Files list implicates it.
 
 Suggested: `swift.md`, `git.md`, `testing.md`, `ui.md`.
 

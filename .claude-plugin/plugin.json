@@ -1,5 +1,5 @@
 {
   "name": "hafness",
-  "version": "0.1.0",
-  "description": "Single-operator harness for AI coding agents: contract, map, sensors, state, policy, ledger."
+  "version": "0.2.0",
+  "description": "Single-operator harness for AI coding agents: describe, plan, implement, feedback, with every spec, task and prompt on one HTML board."
 }

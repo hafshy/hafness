@@ -1,5 +1,7 @@
 # Hafness — v0 design
 
+> **v0.** This describes the v0 design (contracts, sign-off, handoff). The v1 loop, describe → plan → implement → feedback on a board, is in the [README](../README.md); the reasons for the change are in `.hafness/state/decisions.md` (2026-10-05).
+
 Personal harness for AI coding agents. One operator. Form: Claude Code plugin (skill + commands + files).
 Stack-agnostic, profile-detected. Status: design, unbuilt.
 
