@@ -66,8 +66,9 @@ session can read it and continue without you re-explaining anything.
 | `tasks.md` | Every task: spec, status, Scope, run id | `/hafness-plan`, `/hafness-feedback`, `/hafness-implement` | ○ | markdown table · columns, statuses, run ids linted |
 | `feedback.md` | Your words, quoted; how the agent read them; what they became | `/hafness-feedback` | ○ | markdown · header grammar linted |
 
-Spec statuses: `draft → reviewed → planned → building → built → done`. Review is optional.
-`built` means the gate passed; only your acceptance makes it `done`.
+Spec statuses: `draft → reviewed → planned → building → done`. Review is optional.
+`done` means the gate passed with every task in it; the lint refuses `done` while a task is open.
+Feedback is optional and reopens a spec.
 
 A task's **Scope** is enforced. While any task is `doing`, the scope fence in `verify.sh`
 fails on a changed file that falls outside the Scope of every `doing` task. Paths ending in
@@ -150,7 +151,7 @@ before it starts.
 | Not here | Why |
 |---|---|
 | contracts | Replaced by task rows whose Scope the fence enforces; you approve intent, not paths |
-| `rubric.md`, receipts | A self-scored rubric was never evidence. The run block and your acceptance are |
+| `rubric.md`, receipts | A self-scored rubric was never evidence. The run block is |
 | `state/<name>.md` | Per-person sharding avoids merge conflicts you will never have |
 | any `.json` in `.hafness/` | Every case has a format that is both readable and trivially parseable |
 | `.gitkeep` | Replaced by `README.md` files that explain their own directory |

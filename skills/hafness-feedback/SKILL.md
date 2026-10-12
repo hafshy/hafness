@@ -1,6 +1,6 @@
 ---
 name: hafness-feedback
-description: Record the operator's feedback on built work — accept it as done, or turn it into new scoped tasks on the board. Usage - /hafness-feedback F-nnn <what you saw or want changed>
+description: Optional. Turn the operator's feedback on done work into new scoped tasks on the board, reopening the spec. Usage - /hafness-feedback F-nnn <what you saw or want changed>
 disable-model-invocation: true
 ---
 
@@ -8,10 +8,10 @@ disable-model-invocation: true
 
 No spec id given? Use the spec in flight in `state/current.md`; if none is clear, ask.
 
-**Already accepted?** If the spec's `Status:` is `done` and this is a change request, write
-nothing yet. Ask: "F-nnn is accepted. Reopen it with this change, or start a new spec?"
-- **Reopen** — carry on below; the spec goes back to `planned`.
-- **New spec** — write nothing here. Offer `/hafness-describe <their words>, building on F-nnn`.
+Feedback is optional: a spec is `done` once its gate passes. Feedback reopens it. If what
+the operator wants is a new feature rather than a change to this one, write nothing yet and
+ask: "Reopen F-nnn with this, or start a new spec?" — on new spec, offer
+`/hafness-describe <their words>, building on F-nnn`.
 
 ## 1. Record it
 
@@ -23,12 +23,10 @@ Append to `.hafness/feedback.md`, continuing the highest `FB-nnn`:
 
     **Read as** what you understood, in one or two lines.
 
-## 2. Accept, or turn it into tasks
+## 2. Turn it into tasks
 
-**Acceptance** ("accept", "looks good", "ship it"): header status → `accepted`, spec
-`Status:` → `done`. Nothing else.
-
-**Change requests**: compare against the spec's "How you'll know".
+Compare it against the spec's "How you'll know". Praise with nothing to change ("looks
+good") needs no entry; say so and stop.
 
 - A change to *what* the feature does → update the spec's Requirements and "How you'll
   know" first, and say so. The spec stays the source of truth.
@@ -49,8 +47,8 @@ Unclear feedback: ask one question before writing tasks. Never guess what "it fe
 
 ## 3. Finish
 
-1. `state/current.md`: **Next action** → `/hafness-implement F-nnn` (or the next spec, if accepted).
+1. `state/current.md`: **Next action** → `/hafness-implement F-nnn`.
 2. `bash .hafness/verify.sh` — the format lint must pass.
 3. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
    (with the URL under `## Board` if one is there, else new — and record the URL).
-4. Stop: name the entry, what it became (accepted, or the new task ids), and the next command.
+4. Stop: name the entry, the new task ids, and the next command.

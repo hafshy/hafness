@@ -58,7 +58,7 @@ Full entries with what each one rejected are in
 5. **`HAFNESS.md` names every file**, capped at 60 lines, linted both directions.
 6. **A plugin, not a bare skill.** This reversed an earlier choice.
 
-7. **v1: you approve intent and judge results; the agent owns paths.** Contract sign-off,
+7. **v1: you approve intent; the agent owns paths; a passing gate is done.** Feedback is optional. Contract sign-off,
    the rubric and receipts are gone; task Scope is enforced by a fence in `verify.sh`.
 
 Do not silently revisit these. If one turns out wrong while building, write the reversal
@@ -73,7 +73,7 @@ into `decisions.md` with what forced it — that file is the record, not the cha
 | describe | `/hafness-describe` | `specs/F-nnn.md` | ≤ 5 questions; review optional |
 | plan | `/hafness-plan` | `plans/F-nnn.md`, rows in `tasks.md` | each task carries a Scope |
 | implement | `/hafness-implement` | code, a run block | the gate and the scope fence |
-| feedback | `/hafness-feedback` | `feedback.md`, revision tasks + plan update, or acceptance | only you move `built` to `done` |
+| feedback | `/hafness-feedback` — optional | `feedback.md`, revision tasks + plan update | reopens a `done` spec |
 
 Every command ends by rewriting `state/current.md` and redrawing the board. `policy.md`
 applies throughout. The v0 diagrams in [docs/02-flows.md](docs/02-flows.md) still explain

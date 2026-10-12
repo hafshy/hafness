@@ -91,7 +91,7 @@ button { font: inherit; color: inherit; }
 .s-reviewed, .s-open { background: var(--ask-bg); color: var(--ask); }
 .s-planned, .s-todo { background: var(--agent-bg); color: var(--agent); }
 .s-building, .s-doing { background: var(--gate-bg); color: var(--gate); }
-.s-built, .s-PASS, .s-done, .s-accepted { background: var(--check-bg); color: var(--check); }
+.s-PASS, .s-done { background: var(--check-bg); color: var(--check); }
 .s-blocked, .s-FAIL, .s-ESCALATED { background: var(--bad-bg); color: var(--bad); }
 .s-dropped { text-decoration: line-through; }
 
@@ -184,7 +184,7 @@ const sections = t => { const o = {}; (t || "").split(/^## /m).slice(1).forEach(
 const byPath = re => Object.keys(docs).filter(p => re.test(p)).sort();
 
 // --- parse the markdown into board data ----------------------------------------
-const STAGES = ["draft", "reviewed", "planned", "building", "built", "done"];
+const STAGES = ["draft", "reviewed", "planned", "building", "done"];
 const STAGE_LABEL = ["Described", "Reviewed", "Planned", "Building", "Built", "Accepted"];
 const specs = byPath(/^specs\/F-\d+\.md$/).map(p => {
   const t = docs[p], id = p.match(/F-\d+/)[0];
@@ -232,7 +232,7 @@ const loop = [
   ["Review", count("draft"), "waiting for review", "optional"],
   ["Plan", tasks.filter(t => t.status === "todo").length, "tasks to do", "/hafness-plan"],
   ["Implement", tasks.filter(t => t.status === "doing").length, "in progress", "/hafness-implement"],
-  ["Feedback", count("built"), "built, waiting for you", "/hafness-feedback"],
+  ["Feedback", openFb, "open feedback", "optional"],
 ];
 document.getElementById("loop").innerHTML = loop.map(([n, v, what, cmd]) =>
   `<div class="stage ${v && (n === "Implement" || n === "Feedback") ? "hot" : ""}"><span>${n}</span><b>${v}</b><span>${what}</span><code>${cmd}</code></div>`).join("");
@@ -264,7 +264,7 @@ const panels = {
         return `<section class="col ${st}"><h3>${st}<span>${c.length}</span></h3>${c.map(taskCard).join("") || `<span class="muted" style="font-size:.82rem">Nothing here.</span>`}</section>`; }).join("")}</div>`; } },
   research: { label: "Research", n: research.length, draw: () => !research.length ? empty("No research notes. Research is optional, before describing.", "/hafness-research <topic>") :
     `<div class="list">${research.map(r => `<div class="item"><details><summary>${esc(r.title)}</summary><div class="md">${md(r.body)}</div></details><div class="row mono">${esc(r.path)}</div></div>`).join("")}</div>` },
-  feedback: { label: "Feedback", n: feedback.length, draw: () => !feedback.length ? empty("No feedback yet. Try a built feature, then tell the agent what you think.", "/hafness-feedback F-001 <what you saw>") :
+  feedback: { label: "Feedback", n: feedback.length, draw: () => !feedback.length ? empty("No feedback yet. It is optional: try a done feature, and say what to change.", "/hafness-feedback F-001 <what you saw>") :
     `<div class="list">${feedback.slice().reverse().map(f => `<div class="item"><div class="row"><b>${esc(f.id)}</b><span>${esc(f.spec)}</span><span>${esc(f.date)}</span><span class="pill s-${esc(f.status)}">${esc(f.status)}</span></div><div class="md">${md(f.body)}</div></div>`).join("")}</div>` },
   history: { label: "History", n: prompts.length, draw: () => {
     if (!prompts.length) return empty("No prompts logged yet. The history hook records every prompt from here on.");

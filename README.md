@@ -32,19 +32,19 @@ npx skills add hafshy/hafness -a claude-code -g -y
 /hafness-research <topic>           # optional: describe and plan also research on their own when needed
 /hafness-describe <what you want>   # your idea → a spec (what and why) on the board
 /hafness-plan F-001                 # spec → plan + scoped tasks on the board
-/hafness-implement F-001            # build task by task, run the gate, leave it built for you to try
-/hafness-feedback F-001 <text>      # accept it, or turn what you saw into new tasks
+/hafness-implement F-001            # build task by task, run the gate; a pass is done
+/hafness-feedback F-001 <text>      # optional: turn what you saw into new tasks
 ```
 
-The loop: **init → [research] → describe → [review] → plan → implement → feedback ↺**
+The loop: **init → [research] → describe → [review] → plan → implement → [feedback] ↺**
 
-You are asked two kinds of things, and both are things you know better than the agent:
-**what you want** (describe, and an optional review of the spec) and **whether you got it**
-(feedback on the built result). You are never asked to approve file paths or budgets.
+You are asked one thing, and it is something you know better than the agent: **what you
+want** (describe, and an optional review of the spec). When the result is not what you
+meant, say so with feedback. You are never asked to approve file paths or budgets.
 Those are the agent's job, and the gate holds it to them.
 
-`done` is not the agent's opinion. A spec is `built` when `bash .hafness/verify.sh` passes
-with every task inside its scope, and `done` only when you accept it.
+`done` is not the agent's opinion. A spec is `done` when `bash .hafness/verify.sh` passes
+with every task inside its scope, and the lint refuses `done` while any of its tasks is not.
 
 ## The board
 
@@ -158,7 +158,7 @@ HAFNESS_VERIFY: PASS
 HAFNESS_RUN: r-0001
 ```
 
-The tasks go to `done` with `r-0001` in their Run cell, the spec goes to **Built**, and
+The tasks go to `done` with `r-0001` in their Run cell, the spec goes to **Done**, and
 Claude stops with a card telling you how to try it.
 
 If the gate **fails**, Claude fixes the failing check and runs it again, up to the plan's
@@ -176,21 +176,16 @@ You run the app and try it.
 
 Claude records your words in `feedback.md`, writes how it read them, updates the spec if
 the behavior changed, adds tasks that revise what was built, and updates the plan to match.
-`/hafness-implement F-001` picks it up with a fresh attempt budget. Feedback on a spec you
-already accepted makes Claude ask first: reopen it, or start a new spec. When it is right:
-
-```
-/hafness-feedback F-001 accept
-```
-
-The spec goes to **Accepted**. Next idea: `/hafness-describe …`.
+`/hafness-implement F-001` picks it up with a fresh attempt budget. If what you ask for is
+really a new feature, Claude asks first: reopen F-001, or start a new spec. No feedback
+needed when it is right. Next idea: `/hafness-describe …`.
 
 ### Resume cold
 
 New terminal, no chat history. The routing skill reads `state/current.md` and prints:
 
 > **In flight** — nothing
-> **Next action** — /hafness-describe the next feature; F-001 accepted
+> **Next action** — /hafness-describe the next feature; F-001 done
 > **Open risks** — no test target yet; the gate is build-only
 > **Board** — https://claude.ai/artifact/…
 

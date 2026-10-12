@@ -3,10 +3,10 @@
 One file per feature: `F-nnn.md`. Written by `/hafness-describe`. **What and why** — never
 which files. The operator reads these, so write for a person, not for the agent.
 
-**Status** `draft` · `reviewed` · `planned` · `building` · `built` · `done` · `dropped`
+**Status** `draft` · `reviewed` · `planned` · `building` · `done` · `dropped`
 
 - `draft` → `reviewed` only on the operator's word. Review is optional; plan accepts either.
-- `built` means the gate passed. Only the operator's acceptance moves it to `done`.
+- `done` means the gate passed with every task in it. Feedback is optional and reopens it.
 
 **Format contract** — `verify.sh` fails if the first line or the `Status:` line drifts.
 

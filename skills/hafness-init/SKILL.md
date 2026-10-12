@@ -62,6 +62,14 @@ and hook):
 If an identical entry is already there, leave it. The hook takes effect from the next
 prompt; say so.
 
+Append these two lines to `<project>/.gitignore` (create it if absent, skip lines already there):
+
+    .hafness/history.md
+    .hafness/board.html
+
+`history.md` holds every prompt typed, and the board embeds it. Both stay on this machine
+(and in the private published board). Tell the operator: delete the lines to commit them.
+
 ## 5. Gate, board, stop
 
 Run `bash .hafness/verify.sh` and show the output verbatim. Run `bash .hafness/board.sh`.

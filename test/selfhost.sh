@@ -30,13 +30,23 @@ cp -R "$TPL/." "$tmp/"
 H="$tmp/.hafness"
 [ -d "$H" ] || fail "template copy lost .hafness/"
 perl -pi -e 's/^HAF_STACK=""/HAF_STACK="test"/; s/^HAF_TEST=""/HAF_TEST="true"/' "$H/profile.sh"
-out="$(bash "$H/verify.sh" --log F-001 1 3 2>&1)"; rc=$?
+out="$(bash "$H/verify.sh" --log F-001 2>&1)"; rc=$?
 [ $rc -eq 0 ] || fail "fresh template gate failed:\n$out"
 grep -q 'HAFNESS_VERIFY: PASS' <<<"$out" || fail "no PASS verdict"
 grep -q 'HAFNESS_RUN: r-0001' <<<"$out" || fail "first run should be r-0001, got: $(grep HAFNESS_RUN <<<"$out")"
-out="$(bash "$H/verify.sh" --log F-001 2 3 2>&1)"
+out="$(bash "$H/verify.sh" --log F-001 2>&1)"
 grep -q 'HAFNESS_RUN: r-0002' <<<"$out" || fail "second run should be r-0002"
 bash "$H/verify.sh" >/dev/null 2>&1 || fail "written run block failed the grammar lint"
+
+# 4b. the gate counts attempts itself: failures climb to ESCALATED, a PASS resets the count
+perl -pi -e 's/^HAF_TEST="true"/HAF_TEST="false"/' "$H/profile.sh"
+for i in 1 2 3; do bash "$H/verify.sh" --log F-001 >/dev/null 2>&1; done
+tail -n 4 "$H"/log/[0-9]*.md | grep -q 'F-001 · attempt 3/3 · ESCALATED' || fail "third failure did not escalate"
+perl -pi -e 's/^HAF_TEST="false"/HAF_TEST="true"/' "$H/profile.sh"
+bash "$H/verify.sh" --log F-001 >/dev/null 2>&1
+grep -q 'F-001 · attempt 4/3 · PASS' "$H"/log/[0-9]*.md || fail "attempt after escalation should be 4"
+bash "$H/verify.sh" --log F-001 >/dev/null 2>&1
+grep -q 'r-0007 · .* · F-001 · attempt 1/3 · PASS' "$H"/log/[0-9]*.md || fail "a PASS did not reset the attempt count"
 
 # 5. the history hook tags Hafness commands, prints nothing, and its entries pass the lint
 hook() { python3 -c 'import json,sys; print(json.dumps({"prompt": sys.argv[1]}))' "$1" | bash "$H/history.sh"; }
@@ -64,15 +74,35 @@ bash "$H/verify.sh" >/dev/null 2>&1 && fail "unknown spec status passed the lint
 perl -pi -e 's/^Status: finished/Status: planned/' "$H/specs/F-001.md"
 echo '| T-001 | F-001 | Build it | done | `src/` | — |' >> "$H/tasks.md"
 bash "$H/verify.sh" >/dev/null 2>&1 && fail "done task without a run id passed the lint"
+perl -pi -e 's/^(\| T-001 .*)\| — \|$/$1| r-9999 |/' "$H/tasks.md"
+bash "$H/verify.sh" >/dev/null 2>&1 && fail "done task with an invented run id passed the lint"
+perl -pi -e 's/r-9999/r-0003/' "$H/tasks.md"
+bash "$H/verify.sh" >/dev/null 2>&1 && fail "done task citing a FAIL run passed the lint"
+perl -pi -e 's/r-0003/r-0001/' "$H/tasks.md"
+bash "$H/verify.sh" >/dev/null 2>&1 || fail "done task citing a PASS run failed the lint"
+
+# 7b. a spec is done only when every one of its tasks is
+perl -pi -e 's/^Status: planned/Status: done/' "$H/specs/F-001.md"
+bash "$H/verify.sh" >/dev/null 2>&1 || fail "done spec with every task done failed the lint"
+echo '| T-002 | F-001 | Polish it | todo | `src/` | — |' >> "$H/tasks.md"
+out="$(bash "$H/verify.sh" 2>&1)" && fail "done spec with a todo task passed the lint"
+grep -q 'F-001: done, but not every task is: T-002' <<<"$out" || fail "lint did not name the open task"
+perl -ni -e 'print unless /^\| T-002 /' "$H/tasks.md"
+perl -pi -e 's/^Status: done/Status: planned/' "$H/specs/F-001.md"
 
 # 8. the scope fence fails on a change outside every doing task's Scope
-perl -pi -e 's/^\| T-001 \| F-001 \| Build it \| done/| T-001 | F-001 | Build it | doing/' "$H/tasks.md"
+perl -pi -e 's/^\| T-001 \| F-001 \| Build it \| done \| (.*) \| r-0001 \|$/| T-001 | F-001 | Build it | doing | $1 | — |/' "$H/tasks.md"
 git -C "$tmp" init -q && git -C "$tmp" add -A && git -C "$tmp" -c user.email=t@t -c user.name=t commit -qm base
 mkdir -p "$tmp/src" && echo x > "$tmp/src/a.txt"
 bash "$H/verify.sh" >/dev/null 2>&1 || fail "change inside Scope failed the fence"
 echo x > "$tmp/elsewhere.txt"
 out="$(bash "$H/verify.sh" 2>&1)" && fail "change outside Scope passed the fence"
 grep -q 'elsewhere.txt' <<<"$out" || fail "fence did not name the stray file"
+rm "$tmp/elsewhere.txt"
+echo '# loosened' >> "$H/profile.sh"
+out="$(bash "$H/verify.sh" 2>&1)" && fail "editing profile.sh mid-task passed the fence"
+grep -q '.hafness/profile.sh' <<<"$out" || fail "fence did not name profile.sh"
+git -C "$tmp" checkout -q -- .hafness/profile.sh
 
 # 9. a template with nothing runnable must refuse to pass
 mkdir "$tmp/empty" && cp -R "$TPL/." "$tmp/empty/"

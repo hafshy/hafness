@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 - `specs/<id>.md` does not exist — offer `/hafness-describe`
 - its status is not `draft`, `reviewed`, or `planned` (re-planning) — say what it is and stop.
-  For `built` or `done`, changes go through feedback: offer `/hafness-feedback <id> <what to change>`
+  For `done`, changes go through feedback: offer `/hafness-feedback <id> <what to change>`
 
 ## 1. Read
 

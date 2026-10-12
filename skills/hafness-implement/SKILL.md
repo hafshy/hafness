@@ -1,6 +1,6 @@
 ---
 name: hafness-implement
-description: Build a planned spec task by task inside each task's scope, run the logged gate, and leave it built for the operator to try. Usage - /hafness-implement F-nnn
+description: Build a planned spec task by task inside each task's scope, run the logged gate; a pass makes it done. Usage - /hafness-implement F-nnn
 disable-model-invocation: true
 ---
 
@@ -38,10 +38,11 @@ Anything on `policy.md`'s stop-and-ask list: stop and ask, every time.
 
 ## 3. Gate, logged
 
-Attempt = number of run blocks for this spec across `log/*.md` *since its last PASS*, plus
-one — a revision from feedback starts a fresh budget. Budget = the plan's `Attempts:`. Run:
+The gate counts attempts itself (this spec's runs since its last PASS, plus one, so a
+revision from feedback starts a fresh budget) and reads the budget from the plan's
+`Attempts:`. Run:
 
-    bash .hafness/verify.sh --log <id> <attempt> <budget>
+    bash .hafness/verify.sh --log <id>
 
 Show the output verbatim. It writes the block header and verdict to `log/<today>.md` and
 prints `HAFNESS_RUN: r-nnnn`. Append to that block, one `**Key** value` line each:
@@ -49,24 +50,25 @@ prints `HAFNESS_RUN: r-nnnn`. Append to that block, one `**Key** value` line eac
 label and failing line, verbatim), **Next** (one line).
 
 - **PASS** — every `doing` task of this spec → `done` with the run id in its Run cell.
-  Spec → `built`. Any `planned` entry in `feedback.md` whose tasks are now all `done` → `done`.
+  Spec → `done`. Any `planned` entry in `feedback.md` whose tasks are now all `done` → `done`.
 - **FAIL, attempt < budget** — fix the failing check and gate again. Tasks stay `doing`.
 - **ESCALATED** — stop. Add **Escalation** to the block: what was tried, what the evidence
   said, what the operator must decide. Do not widen scope to get a pass.
 
 ## 4. Finish
 
-1. `state/current.md`: **In flight**, **Next action** (`try <id>, then /hafness-feedback <id> …`,
+1. `state/current.md`: **In flight**, **Next action** (`/hafness-describe the next feature`,
    or the failing check), **Open risks**, **Last run** `r-nnnn · verdict`.
 2. Any decision made this session → `state/decisions.md`.
 3. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
    (with the URL under `## Board` if one is there, else new — and record the URL).
 4. On PASS, stop with the try-it card, built from the spec's "How you'll know":
 
-> **<id> · <title> · built, waiting for you**
+> **<id> · <title> · done**
 > **What changed** one line, in the operator's words
 > **How to see it** the steps from "How you'll know"
 > **Stayed out** the plan's Not touching list — the fence held
 > **Guesses** anything unverified (e.g. no test target, so the gate only builds)
 >
-> Try it, then `/hafness-feedback <id> <what you saw>` — or "accept" if it is right.
+> Want something changed? `/hafness-feedback <id> <what you saw>`. Otherwise, next:
+> `/hafness-describe …`.

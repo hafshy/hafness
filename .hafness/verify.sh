@@ -13,13 +13,18 @@ set -uo pipefail
 HAF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 START=$SECONDS
 
-# --log <feature|—> <attempt> <budget>: also append a run block to log/<today>.md.
-# The header line is written here, not by the agent, so the grammar cannot drift.
+# --log <feature|—>: also append a run block to log/<today>.md.
+# The header, the attempt and the budget are worked out here, not by the agent, so none
+# of them can drift: attempt = this feature's runs since its last PASS, plus one;
+# budget = `Attempts:` in plans/<feature>.md, else 3.
 LOG_FEATURE=""; LOG_ATTEMPT=""; LOG_BUDGET=""
 if [ "${1:-}" = "--log" ]; then
-  LOG_FEATURE="${2:?--log needs <feature|—> <attempt> <budget>}"
-  LOG_ATTEMPT="${3:?--log needs <attempt>}"
-  LOG_BUDGET="${4:?--log needs <budget>}"
+  LOG_FEATURE="${2:?--log needs <feature|—>}"
+  LOG_ATTEMPT="$(cat "$HAF"/log/[0-9]*.md 2>/dev/null | awk -v f=" $LOG_FEATURE " '
+    /^## r-[0-9]+ · / && index($0, " ·" f "·") { n = / · PASS · / ? 0 : n + 1 }
+    END { print n + 1 }')"
+  LOG_BUDGET="$(grep -m1 -oE '^Attempts: [0-9]+' "$HAF/plans/$LOG_FEATURE.md" 2>/dev/null | grep -oE '[0-9]+$')"
+  LOG_BUDGET="${LOG_BUDGET:-3}"
 fi
 
 FAILED=0
@@ -85,9 +90,13 @@ harness_lint() {
       bad=1
     fi
     # done must carry the run id that proved it.
-    if awk -F'|' '/^\| T-/ && $5 ~ /done/ && $7 !~ /r-[0-9]+/' "$f" | grep -q .; then
-      echo "    a task is done with no run id:"
-      awk -F'|' '/^\| T-/ && $5 ~ /done/ && $7 !~ /r-[0-9]+/ {print "      " $2}' "$f"
+    local passed unproven
+    passed="$(grep -hoE '^## r-[0-9]+ · .* · PASS · ' "$HAF"/log/[0-9]*.md 2>/dev/null | grep -oE '^## r-[0-9]+' | cut -c4-)"
+    unproven="$(awk -F'|' '/^\| T-/ && $5 ~ /done/ {gsub(/[ `]/, "", $2); gsub(/[ `]/, "", $7); print $2, $7}' "$f" \
+      | while read -r id rid; do grep -qxF -- "$rid" <<< "$passed" || echo "      $id: '$rid' is not a PASS run in log/"; done)"
+    if [ -n "$unproven" ]; then
+      echo "    a task is done without a passing run behind it:"
+      printf '%s\n' "$unproven"
       bad=1
     fi
     if awk -F'|' '/^\| T-/ {for(i=2;i<=7;i++) if($i ~ /^[[:space:]]*$/) {print; break}}' "$f" | grep -q .; then
@@ -97,10 +106,19 @@ harness_lint() {
   fi
 
   # Every spec opens with its id and carries a known status.
+  # done means verified: the spec has tasks, and every live one is done — so, by the
+  # check above, carries a PASS run.
+  local id left
   for f in "$HAF"/specs/F-*.md; do
     [ -e "$f" ] || continue
+    id="$(basename "$f" .md)"
+    if grep -qx 'Status: done' "$f"; then
+      left="$(awk -F'|' -v id="$id" '/^\| T-/ { gsub(/ /, ""); if ($3 == id) { n++; if ($5 != "done" && $5 != "dropped") l = l " " $2 } }
+        END { print (n ? l : " (no tasks)") }' "$HAF/tasks.md" 2>/dev/null)"
+      [ -z "$left" ] || { echo "    $id: done, but not every task is:$left"; bad=1; }
+    fi
     head -1 "$f" | grep -qE '^# F-[0-9]+ — .+' || { echo "    $(basename "$f"): first line must be '# F-nnn — <title>'"; bad=1; }
-    grep -qE '^Status: (draft|reviewed|planned|building|built|done|dropped)$' "$f" \
+    grep -qE '^Status: (draft|reviewed|planned|building|done|dropped)$' "$f" \
       || { echo "    $(basename "$f"): missing or unknown 'Status:' line"; bad=1; }
   done
 
@@ -113,7 +131,7 @@ harness_lint() {
     printf '%s\n' "$drift" | sed 's/^/      /'
     return 1
   }
-  lint_headers "$HAF/feedback.md" '^## FB-[0-9]+ · [0-9]{4}-[0-9]{2}-[0-9]{2} · F-[0-9]+ · (open|planned|done|accepted)$' || bad=1
+  lint_headers "$HAF/feedback.md" '^## FB-[0-9]+ · [0-9]{4}-[0-9]{2}-[0-9]{2} · F-[0-9]+ · (open|planned|done)$' || bad=1
   lint_headers "$HAF/history.md" '^## [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} · (prompt|`[a-z]+`)$' || bad=1
 
   # profile.sh must declare a stack and at least one runnable check.
@@ -160,7 +178,12 @@ scope_fence() {
   if ! git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then echo "    not a git repo — fence skipped"; return 0; fi
   changed="$(cd "$root" && { git diff --name-only HEAD 2>/dev/null || git ls-files; git ls-files --others --exclude-standard; } | sort -u)"
   while IFS= read -r file; do
-    case "$file" in ''|.hafness/*|CLAUDE.md|AGENTS.md) continue ;; esac
+    case "$file" in
+      # The gate's own files: in scope only when a doing task names them exactly.
+      .hafness/verify.sh|.hafness/profile.sh|.hafness/policy.md)
+        grep -qxF "$file" <<< "$scopes" || out="$out $file"; continue ;;
+      ''|.hafness/*|CLAUDE.md|AGENTS.md) continue ;;
+    esac
     ok=0
     while IFS= read -r pat; do
       case "$pat" in
@@ -216,9 +239,8 @@ echo "HAFNESS_VERIFY: $VERDICT"
 # --- run log: one block per run, header written mechanically -------------------
 if [ -n "$LOG_FEATURE" ]; then
   [ "$VERDICT" = FAIL ] && [ "$LOG_ATTEMPT" -ge "$LOG_BUDGET" ] && VERDICT=ESCALATED
-  # Only block headers and receipt filenames count — prose mentioning an id does not.
-  last="$({ grep -hoE '^## r-[0-9]{4}' "$HAF"/log/[0-9]*.md 2>/dev/null | cut -c4-
-            ls "$HAF/log/receipts" 2>/dev/null | grep -oE '^r-[0-9]{4}'; } | sort | tail -1)"
+  # Only block headers count — prose mentioning an id does not.
+  last="$(grep -hoE '^## r-[0-9]{4}' "$HAF"/log/[0-9]*.md 2>/dev/null | cut -c4- | sort | tail -1)"
   next=$(( 10#${last#r-} + 1 ))
   run_id="$(printf 'r-%04d' "$next")"
   today="$HAF/log/$(date +%F).md"

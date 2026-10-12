@@ -113,3 +113,15 @@ Rejected: contract sign-off (judging paths is the agent's job); rubric and recei
 self-scored rubric was never evidence; the run block and the operator's acceptance are);
 short `/describe` names (collide with other installed skills).
 Reverses: the contract-as-first-class-artifact choice in docs/01-design.md.
+
+## 2026-10-12 — a passing gate is done; feedback is optional
+Context: waiting on an explicit "accept" added a step to every feature for no new evidence.
+The operator wants verified work to be finished work.
+Chose: `/hafness-implement` sets a spec `done` on PASS; `built` and the `accepted` feedback
+status are gone. The lint refuses a `done` spec while any of its tasks is not `done`, so a
+done spec always traces to PASS runs. Feedback stays, optional, and reopens a spec.
+Also: `verify.sh --log <id>` counts attempts and reads the budget itself; the scope fence
+guards `verify.sh`, `profile.sh` and `policy.md`; a done task's run id must be a PASS block;
+init gitignores `history.md` and `board.html`.
+Rejected: requiring a `/hafness-feedback` prompt in `history.md` before `done`.
+Reverses: "only the operator moves `built` to `done`" (2026-10-05).
