@@ -9,6 +9,11 @@ type) is markdown, and all of it is drawn on one HTML board you can open or shar
 
 Seven skills and one `.hafness/` directory. Stack-agnostic. Built for one person.
 
+**New here? Read the [field guide](docs/05-guide.md)**: the loop step by step, who decides
+what, the board, the gate, and every file Hafness adds. For the interactive version, with a
+working board preview and a file browser, open [docs/05-guide.html](docs/05-guide.html) in
+a browser after cloning.
+
 ## Install
 
 One command, into the project you are working on:
@@ -255,6 +260,7 @@ docs/v0-ledger/                   the v0 backlog, contracts and receipts, kept f
 | [docs/02-flows.md](docs/02-flows.md) | v0 flowcharts: session loop, gate logic, rule promotion |
 | [docs/03-comparison.md](docs/03-comparison.md) | Hafness vs harness-creator vs edts-harness |
 | [docs/04-files.md](docs/04-files.md) | Every v1 file: purpose, who writes it, what to review |
+| [docs/05-guide.md](docs/05-guide.md) | The field guide for users: the loop, the board, the gate, every file ([interactive version](docs/05-guide.html)) |
 
 ## Sources
 

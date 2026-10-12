@@ -100,7 +100,7 @@ button { font: inherit; color: inherit; }
 .feature { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
 .fhead { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline; }
 .fhead .id { font: 600 0.8rem var(--mono); color: var(--muted); }
-.track { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+.track { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
 .track li { font-size: 0.66rem; color: var(--muted); display: grid; gap: 4px; min-width: 0; }
 .track li::before { content: ""; height: 4px; border-radius: 2px; background: var(--sunk); }
 .track li.on::before { background: var(--agent); }
@@ -185,7 +185,7 @@ const byPath = re => Object.keys(docs).filter(p => re.test(p)).sort();
 
 // --- parse the markdown into board data ----------------------------------------
 const STAGES = ["draft", "reviewed", "planned", "building", "done"];
-const STAGE_LABEL = ["Described", "Reviewed", "Planned", "Building", "Built", "Accepted"];
+const STAGE_LABEL = ["Described", "Reviewed", "Planned", "Building", "Done"];
 const specs = byPath(/^specs\/F-\d+\.md$/).map(p => {
   const t = docs[p], id = p.match(/F-\d+/)[0];
   const title = ((t.split("\n")[0] || "").split(" — ")[1] || id).trim();

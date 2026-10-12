@@ -22,6 +22,7 @@ anything runs.
 | `docs/01-design.md`, `docs/02-flows.md` | The v0 design and flows, kept for the reasoning | you | ○ |
 | `docs/03-comparison.md` | Hafness vs harness-creator vs edts-harness | you | ○ |
 | `docs/04-files.md` | This file | you | ○ |
+| `docs/05-guide.md`, `docs/05-guide.html` | The field guide for users, in markdown and as an interactive page | you | ○ |
 | `docs/v0-ledger/` | The v0 backlog, archived contracts, receipt and rubric | — | — |
 | `.claude-plugin/plugin.json` | Plugin manifest: name, version, description | you | — |
 | `skills/<name>/SKILL.md` | `hafness` (routing) and `hafness-{init,research,describe,plan,implement,feedback}` | you | ○ |
@@ -87,7 +88,8 @@ The markdown is the source of truth; the board is a view. Because every document
 embedded, the page opens from disk with no server and publishes as an Artifact unchanged.
 Markdown rendering loads from cdnjs; offline, documents show as plain text.
 
-`history.md` is committed and contains everything typed. If a secret is pasted, delete the
+`history.md` contains everything typed. `/hafness-init` gitignores it and `board.html`
+(which embeds it); delete those lines to commit them. If a secret is pasted, delete the
 entry and rotate the secret.
 
 ### The gate
@@ -134,12 +136,13 @@ The run-log header is fixed so the file stays greppable while staying readable:
 | Map size | `HAFNESS.md` exceeds 60 lines |
 | Map completeness | a file under `.hafness/` is not named in `HAFNESS.md` |
 | Task table | the header drifted, a row has the wrong column count, a cell is blank, or a status is unknown |
-| Task evidence | a task is `done` with no run id |
+| Task evidence | a task is `done` and its run id is not a PASS block in `log/` |
+| Spec done | a spec is `done` while one of its tasks is not |
 | Specs | a spec's first line is not `# F-nnn — <title>`, or its `Status:` is missing or unknown |
 | Feedback, history | a `##` header does not match its grammar |
 | Profile | `profile.sh` has no `HAF_STACK`, or an unterminated command string |
 | Run log | a `##` header does not match the grammar |
-| Scope fence | a file changed since the last commit lies outside the Scope of every `doing` task |
+| Scope fence | a file changed since the last commit lies outside the Scope of every `doing` task; `verify.sh`, `profile.sh` and `policy.md` count unless a task names them exactly |
 
 The fence compares against the last commit, so `/hafness-implement` asks for a clean tree
 before it starts.
