@@ -33,12 +33,13 @@ npx skills add hafshy/hafness -a claude-code -g -y
 ## Use
 
 ```
-/hafness-init                       # once: copy .hafness/, detect the stack, install the history hook, draw the board
+/hafness-init                       # once: copy .hafness/, detect the stack, install the hooks, draw the board
 /hafness-research <topic>           # optional: describe and plan also research on their own when needed
 /hafness-describe <what you want>   # your idea → a spec (what and why) on the board
 /hafness-plan F-001                 # spec → plan + scoped tasks on the board
 /hafness-implement F-001            # build task by task, run the gate; a pass is done
 /hafness-feedback F-001 <text>      # optional: turn what you saw into new tasks
+/hafness-board                      # only when you want a shareable link to the board
 ```
 
 The loop: **init → [research] → describe → [review] → plan → implement → [feedback] ↺**
@@ -53,9 +54,11 @@ with every task inside its scope, and the lint refuses `done` while any of its t
 
 ## The board
 
-`.hafness/board.html` is redrawn after every command and every prompt. It is one
-self-contained file: open it from disk, or (when the session has the Artifact tool) it is
-published to a private claude.ai link that updates in place.
+`.hafness/board.html` is redrawn after every command, every prompt, and (through the board
+hook) every edit under `.hafness/`. It is one self-contained file: keep it open from disk
+and refresh. The loop never publishes it, because publishing makes the agent read the whole
+page, thousands of tokens a step. `/hafness-board` publishes it to a private claude.ai link
+(updated in place) when you want one to share.
 
 | Tab | Shows |
 |---|---|
@@ -94,7 +97,7 @@ HAF_TEST=""                                         # no test target in xcodebui
 HAF_LINT=""                                         # no .swiftlint.yml
 ```
 
-It adds the history hook to `.claude/settings.json`, runs the gate once, draws the board,
+It adds the history and board hooks to `.claude/settings.json`, runs the gate once, draws the board,
 and **stops**. Read `profile.sh`: it is the list of commands that decide pass or fail.
 Empty is honest. It found no test target, so it wrote none.
 
@@ -160,7 +163,7 @@ scope, then runs the logged gate:
 --- scope fence        ok
 --- build              ok
 HAFNESS_VERIFY: PASS
-HAFNESS_RUN: r-0001
+HAFNESS_RUN: r-0001 · attempt 1/3 · PASS
 ```
 
 The tasks go to `done` with `r-0001` in their Run cell, the spec goes to **Done**, and
@@ -192,7 +195,7 @@ New terminal, no chat history. The routing skill reads `state/current.md` and pr
 > **In flight** — nothing
 > **Next action** — /hafness-describe the next feature; F-001 done
 > **Open risks** — no test target yet; the gate is build-only
-> **Board** — https://claude.ai/artifact/…
+> **Board** — .hafness/board.html
 
 Nothing had to be re-explained. That is the test of the whole harness.
 
@@ -214,14 +217,15 @@ A rule that keeps getting ignored is evidence it should have been a check.
 
 | Path | Job |
 |---|---|
-| `HAFNESS.md` | the map: the loop and a file index, ≤ 60 lines, linted |
-| `profile.sh` | exactly what will run, sourced by `verify.sh`; review it |
+| `HAFNESS.md` | the map: the loop, definition of done, ≤ 60 lines, linted |
+| `FILES.md` | every file in `.hafness/` and its job, read only when needed |
+| `profile.sh` | exactly what will run, sourced by `verify.sh`; review it. `HAF_TIMEOUT_MIN` stops a hung check, `HAF_PATHS` runs a check only when its files changed, `HAF_SLOW` holds UI and e2e checks for one `--slow` run before done |
 | `verify.sh` | the gate: format lint, scope fence, then the project checks; `--log` appends a run block |
 | `policy.md` | stop-and-ask list and never list |
-| `board.sh` → `board.html` | draws the board from the markdown |
+| `board.sh` → `board.html` | draws the board from the markdown; `--hook` redraws after edits |
 | `history.sh` → `history.md` | prompt hook; every prompt, tagged when it is a Hafness command |
 | `research/`, `specs/`, `plans/` | one file per topic, per feature, per plan; each folder's README is its format |
-| `tasks.md` | every task: status, scope, run id |
+| `tasks.md` → `tasks-done.md` | open tasks: status, scope, run id; rows of done specs move to the archive |
 | `feedback.md` | your feedback, quoted, and what it became |
 | `state/current.md` | in flight · next action · open risks · board link |
 | `state/decisions.md` | decision log; supersedes chat |

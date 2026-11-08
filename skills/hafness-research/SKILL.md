@@ -28,8 +28,8 @@ words as the title, Findings, Options, Recommendation, Sources. Do not write a s
 ## Finish
 
 1. `state/current.md`: **Next action** → `/hafness-describe <the thing, informed by research/<slug>.md>`.
-2. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
-   (with the URL under `## Board` if one is there, else new — and record the URL).
+2. `bash .hafness/board.sh` to redraw the local board. Never publish it here: that is
+   `/hafness-board`, only when the operator asks.
 3. Stop:
 
 > Research note on the board: `research/<slug>.md`. Recommendation: <one line>.

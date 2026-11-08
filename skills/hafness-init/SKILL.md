@@ -1,6 +1,6 @@
 ---
 name: hafness-init
-description: Install the Hafness harness into this project — copy .hafness/, detect the stack, write profile.sh, install the prompt-history hook, draw the first board, then stop for review.
+description: Install the Hafness harness into this project — copy .hafness/, detect the stack, write profile.sh, install the history and board hooks, draw the first board, then stop for review.
 disable-model-invocation: true
 ---
 
@@ -33,7 +33,7 @@ Fill `.hafness/profile.sh`. Rules, in order of importance:
 | Marker | `HAF_STACK` | BUILD | TEST | LINT | TYPECHECK |
 |---|---|---|---|---|---|
 | `Package.swift` | `swift-package` | `swift build` | `swift test` if `Tests/` exists | `swiftlint --strict` if `.swiftlint.yml` | — |
-| `*.xcodeproj` / `*.xcworkspace` | `xcode` | `xcodebuild -scheme <S> -destination 'generic/platform=iOS Simulator' build` | `xcodebuild test -scheme <S> -destination 'platform=iOS Simulator,name=<D>'` only if `xcodebuild -list` shows a test target | `swiftlint --strict` if `.swiftlint.yml` | — |
+| `*.xcodeproj` / `*.xcworkspace` | `xcode` | `xcodebuild -scheme <S> -destination 'generic/platform=iOS Simulator' build` only if TEST stays empty | `xcodebuild test -scheme <S> -destination 'platform=iOS Simulator,name=<D>'` only if `xcodebuild -list` shows a test target | `swiftlint --strict` if `.swiftlint.yml` | — |
 | `package.json` | `node` | `<pm> run build` if scripts.build | `<pm> test` if scripts.test | `<pm> run lint` if scripts.lint | `<pm> run typecheck` if scripts.typecheck, else `<pm> exec tsc --noEmit` if `tsconfig.json` |
 | `go.mod` | `go` | `go build ./...` | `go test ./...` | `go vet ./...` | — |
 | `pyproject.toml` | `python` | — | `pytest` if `tests/` or pytest in config | `ruff check .` if ruff in config | `mypy .` if mypy in config |
@@ -47,19 +47,38 @@ node: `pnpm` if `pnpm-lock.yaml`, `yarn` if `yarn.lock`, `bun` if `bun.lockb`, e
 Anything project-specific beyond these four goes in `HAF_EXTRA` as `"label|command"`, same
 rule: only what really exists.
 
-## 4. Install the history hook
+Keep the gate fast — it runs on every attempt:
 
-Running `/hafness-init` is the operator's request for this hook; say that you are adding it.
+- Xcode: when TEST is set, leave BUILD empty — `xcodebuild test` builds first, and a BUILD for
+  a different destination compiles everything a second time. Use one `-derivedDataPath`, add
+  `-quiet`, and `-only-testing:` the unit-test target; a UI-test target goes in `HAF_EXTRA` as
+  its own check, and in `HAF_SLOW`.
+- More than one app in the repo (say `ios/` and `web/`): give each app's checks paths in
+  `HAF_PATHS`, so a change to one does not run the others' suites.
+- Anything that drives a simulator or a browser end to end (UI tests, e2e suites) goes in
+  `HAF_SLOW`: skipped on retries, run once with `--slow` before the spec is done.
+- Leave `HAF_TIMEOUT_MIN=20` unless a check is known to take longer; say so if you raise it.
+
+## 4. Install the hooks
+
+Running `/hafness-init` is the operator's request for these hooks; say that you are adding them.
+The history hook logs every prompt; the board hook redraws `board.html` after every edit
+under `.hafness/`, silently, so the board stays current without the agent spending tokens on it.
 Merge into `<project>/.claude/settings.json` (create it if absent; keep every existing key
 and hook):
 
 ```json
-{ "hooks": { "UserPromptSubmit": [ { "hooks": [
-  { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.hafness/history.sh\"" }
-] } ] } }
+{ "hooks": {
+  "UserPromptSubmit": [ { "hooks": [
+    { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.hafness/history.sh\"" }
+  ] } ],
+  "PostToolUse": [ { "matcher": "Write|Edit|MultiEdit", "hooks": [
+    { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.hafness/board.sh\" --hook" }
+  ] } ]
+} }
 ```
 
-If an identical entry is already there, leave it. The hook takes effect from the next
+If an identical entry is already there, leave it. The hooks take effect from the next
 prompt; say so.
 
 Append these two lines to `<project>/.gitignore` (create it if absent, skip lines already there):
@@ -72,13 +91,13 @@ Append these two lines to `<project>/.gitignore` (create it if absent, skip line
 
 ## 5. Gate, board, stop
 
-Run `bash .hafness/verify.sh` and show the output verbatim. Run `bash .hafness/board.sh`.
-If this session has an Artifact tool, publish `.hafness/board.html` (icon `board`) and write
-the returned URL under `## Board` in `state/current.md`. Set **Next action** to
+Run `bash .hafness/verify.sh` and show the output verbatim (it is short: `ok` per check). Run `bash .hafness/board.sh`.
+Do not publish the board; the operator opens `.hafness/board.html` locally, or runs
+`/hafness-board` for a shareable link. Set **Next action** to
 `/hafness-describe <what you want to build>`. Then stop with:
 
 > Review `.hafness/profile.sh` before anything runs. A wrong command there makes every later
-> result meaningless. The board is at <URL or path>. When the profile is right, describe
+> result meaningless. The board is `.hafness/board.html` (`/hafness-board` for a link). When the profile is right, describe
 > what you want: `/hafness-describe …` — or `/hafness-research <topic>` first.
 
 If the stack was `unknown`, say plainly that the gate will refuse to pass until the operator

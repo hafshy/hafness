@@ -49,6 +49,6 @@ Unclear feedback: ask one question before writing tasks. Never guess what "it fe
 
 1. `state/current.md`: **Next action** → `/hafness-implement F-nnn`.
 2. `bash .hafness/verify.sh` — the format lint must pass.
-3. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
-   (with the URL under `## Board` if one is there, else new — and record the URL).
+3. `bash .hafness/board.sh` to redraw the local board. Never publish it here: that is
+   `/hafness-board`, only when the operator asks.
 4. Stop: name the entry, the new task ids, and the next command.

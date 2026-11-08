@@ -1,8 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="generated" content="2026-10-12 13:19">
-<title>Harness Board</title>
+<meta name="generated" content="2026-11-08 11:56">
+<title>hafness Board</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: header with the resume point, the loop as a strip of counts, then one panel per tab. */
@@ -381,7 +381,7 @@ const specs = byPath(/^specs\/F-\d+\.md$/).map(p => {
   const body = t.split("\n").slice(1).join("\n").replace(/^Status:.*$/m, "");
   return { id, title, status, body, plan: docs[`plans/${id}.md`] };
 });
-const tasks = (docs["tasks.md"] || "").split("\n").filter(l => /^\| T-/.test(l)).map(l => {
+const tasks = ((docs["tasks-done.md"] || "") + "\n" + (docs["tasks.md"] || "")).split("\n").filter(l => /^\| T-/.test(l)).map(l => {
   const [id, spec, task, status, scope, run] = l.split("|").slice(1, -1).map(c => c.trim());
   return { id, spec, task, status, scope: ticks(scope), run };
 });
