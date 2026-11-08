@@ -209,10 +209,11 @@ result isn't what you meant.
 
 ## The board
 
-One page that shows everything in flight. The board is redrawn after every command and
-every prompt from the markdown files in `.hafness/`. It's a single self-contained HTML
-file: open `.hafness/board.html` from disk, or follow the private claude.ai link the agent
-publishes.
+One page that shows everything in flight. The board is redrawn after every command, every
+prompt and every edit under `.hafness/`, from the markdown files there. It's a single
+self-contained HTML file: keep `.hafness/board.html` open from disk and refresh it. The
+loop never publishes it, because publishing makes the agent read the whole page; run
+`/hafness-board` when you want a private claude.ai link to share.
 
 What it looks like for the habit tracker, midway through its second feature (example data):
 
@@ -323,17 +324,19 @@ anything runs.
 your-project/
 ├── CLAUDE.md                 pointer: read .hafness/HAFNESS.md first
 ├── AGENTS.md                 the same pointer, for other agents
-├── .claude/settings.json     gains one prompt hook
+├── .claude/settings.json     gains a prompt hook and a board hook
 ├── .gitignore                gains history.md and board.html
 └── .hafness/
     ├── HAFNESS.md            the map
+    ├── FILES.md              every file and its job
     ├── state/
     │   ├── current.md        the resume point
     │   └── decisions.md      the decision log
     ├── research/             one note per topic
     ├── specs/                one spec per feature
     ├── plans/                one plan per spec
-    ├── tasks.md              every task, its Scope and run id
+    ├── tasks.md              open tasks, their Scope and run id
+    ├── tasks-done.md         tasks of done specs
     ├── feedback.md           your feedback, quoted
     ├── profile.sh            what the gate runs
     ├── verify.sh             the gate
@@ -352,14 +355,15 @@ your-project/
 |---|---|---|---|
 | `CLAUDE.md` | Three lines telling Claude to read `.hafness/HAFNESS.md` first. A pointer, never a second set of instructions. | `/hafness-init` (added to the top if one exists) | ● |
 | `AGENTS.md` | The same pointer, for agents other than Claude. | `/hafness-init` | ● |
-| `.claude/settings.json` | Gains one prompt hook that runs `.hafness/history.sh`. Your existing settings and hooks are kept. | `/hafness-init` (merged, never overwritten) | ● |
+| `.claude/settings.json` | Gains a prompt hook that runs `.hafness/history.sh` and an edit hook that redraws the board. Your existing settings and hooks are kept. | `/hafness-init` (merged, never overwritten) | ● |
 | `.gitignore` | Gains two lines, so your prompt history and the board that embeds it stay on your machine. Delete them if you want them committed. | `/hafness-init` | ○ |
 
 ### Read every session
 
 | File | Job | Written by | Review |
 |---|---|---|---|
-| `HAFNESS.md` | The map: the loop, every file and its job, and what done means. Capped at 60 lines and checked, so it stays a map. | `/hafness-init` | ● |
+| `HAFNESS.md` | The map: the loop, how to reply, and what done means. Capped at 60 lines and checked, so it stays a map. | `/hafness-init` | ● |
+| `FILES.md` | Every file in `.hafness/` and its job, read only when the agent needs it. | `/hafness-init` | ○ |
 | `state/current.md` | The resume point: what's in flight, the next action, open risks, the last run, and the board link. | every command, at the end | ● |
 | `state/decisions.md` | Every decision, what it rejected, and why. When it disagrees with chat, this file wins. | the agent, as it decides | ○ |
 
@@ -370,7 +374,7 @@ your-project/
 | `research/` | One sourced note per topic: findings, options, a recommendation, sources. | `/hafness-research`, or describe and plan when needed | ○ |
 | `specs/` | One spec per feature: what it does and why, never which files. | `/hafness-describe` | ● Assumptions first |
 | `plans/` | One plan per spec: approach, files, files it won't touch, risks, verification, attempt budget. | `/hafness-plan`, updated by `/hafness-feedback` | ○ |
-| `tasks.md` | Every task for every spec, with status, Scope and run id. The Scope column is the fence. | `/hafness-plan`, `/hafness-feedback`, `/hafness-implement` | ○ |
+| `tasks.md` | Open tasks, with status, Scope and run id. The Scope column is the fence. A done spec's rows move to `tasks-done.md`. | `/hafness-plan`, `/hafness-feedback`, `/hafness-implement` | ○ |
 | `feedback.md` | Your feedback, quoted exactly, how the agent read it, and the tasks it became. | `/hafness-feedback` | ○ |
 
 ### The gate
@@ -409,7 +413,7 @@ a task, and prints four lines before it touches any code:
 > **In flight** · F-002 — Daily reminder at a chosen time (building)
 > **Next action** · `/hafness-implement F-002`, attempt 2 of 3
 > **Open risks** · No UI test target, so the gate only builds and runs unit tests
-> **Board** · claude.ai/artifact/…
+> **Board** · .hafness/board.html
 
 You don't have to explain anything again, and that's the test of the whole harness.
 
