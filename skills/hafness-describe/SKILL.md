@@ -61,8 +61,8 @@ research note recommends one, say so under Assumptions and point at the note.
 1. `state/current.md`: **In flight** → `F-nnn — <title> (draft)`. **Next action** →
    `review F-nnn (optional), then /hafness-plan F-nnn`.
 2. `bash .hafness/verify.sh` — the spec must pass the format lint; fix the spec, never the lint.
-3. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
-   (with the URL under `## Board` if one is there, else new — and record the URL).
+3. `bash .hafness/board.sh` to redraw the local board. Never publish it here: that is
+   `/hafness-board`, only when the operator asks.
 4. Stop:
 
 > Spec F-nnn is on the board. Check the Assumptions first. Edit it or tell me what to

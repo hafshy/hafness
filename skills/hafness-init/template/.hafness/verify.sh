@@ -17,21 +17,50 @@ START=$SECONDS
 # The header, the attempt and the budget are worked out here, not by the agent, so none
 # of them can drift: attempt = this feature's runs since its last PASS, plus one;
 # budget = `Attempts:` in plans/<feature>.md, else 3.
+# --slow: also run the checks named in HAF_SLOW (UI journeys, e2e suites). They are skipped
+#         otherwise, so a fix-and-retry loop never repeats them; a spec is done only on a
+#         --slow PASS.
+# --all:  run every check — slow ones too, and those whose paths (HAF_PATHS) saw no change.
+ALL=0; SLOW=0; args=()
+for a in "$@"; do
+  case "$a" in --all) ALL=1; SLOW=1 ;; --slow) SLOW=1 ;; *) args+=("$a") ;; esac
+done
+set -- "${args[@]:-}"
+
 LOG_FEATURE=""; LOG_ATTEMPT=""; LOG_BUDGET=""
 if [ "${1:-}" = "--log" ]; then
   LOG_FEATURE="${2:?--log needs <feature|—>}"
+  # Only a full PASS resets the count. A PASS whose **Checks** line skipped slow checks
+  # neither resets nor counts, so slow failures still climb to ESCALATED.
   LOG_ATTEMPT="$(cat "$HAF"/log/[0-9]*.md 2>/dev/null | awk -v f=" $LOG_FEATURE " '
-    /^## r-[0-9]+ · / && index($0, " ·" f "·") { n = / · PASS · / ? 0 : n + 1 }
-    END { print n + 1 }')"
+    function settle() { if (pend == "PASS") n = 0; pend = "" }
+    /^## r-[0-9]+ · / { settle(); if (index($0, " ·" f "·")) { if (/ · PASS · /) pend = "PASS"; else n++ } }
+    /^\*\*Checks\*\* / && pend == "PASS" && !/skipped, slow: none/ { pend = "" }
+    END { settle(); print n + 1 }')"
   LOG_BUDGET="$(grep -m1 -oE '^Attempts: [0-9]+' "$HAF/plans/$LOG_FEATURE.md" 2>/dev/null | grep -oE '[0-9]+$')"
   LOG_BUDGET="${LOG_BUDGET:-3}"
 fi
 
 FAILED=0
+# Each check's full output goes to a file, never to the agent's context: a passing check
+# prints "ok"; a failing one prints all of a short output, or the error lines and the tail
+# of a long one (a failed xcodebuild is thousands of lines), plus the path to the full log.
+OUTDIR="${TMPDIR:-/tmp}/hafness-verify.$$"; mkdir -p "$OUTDIR"
 run() {
   local label="$1"; shift
+  local out="$OUTDIR/${label// /-}.log" t0=$SECONDS took
+  CUR_OUT="$out"
   echo "--- ${label}"
-  if "$@"; then echo "    ok"; else echo "    FAILED (${label})"; FAILED=1; fi
+  if "$@" >"$out" 2>&1; then took=$((SECONDS - t0)); echo "    ok ($((took/60))m$(printf %02d $((took%60)))s)"; return 0; fi
+  FAILED=1
+  [ -f "$out.timeout" ] && echo "    timed out after ${HAF_TIMEOUT_MIN:-20} min and was stopped — a hung simulator or test, not a slow one"
+  if [ "$(wc -l < "$out")" -le 40 ]; then
+    cat "$out"
+  else
+    grep -iE 'error|fail|fatal|panic|exception|assert' "$out" | head -25
+    echo "    … last lines:"; tail -n 15 "$out"
+  fi
+  echo "    FAILED (${label}) — full output: $out"
 }
 
 # --- harness self-lint: the format contract ----------------------------------
@@ -46,35 +75,36 @@ harness_lint() {
     bad=1
   fi
 
-  # Every file in the harness must be named in the map. An undocumented file is one
-  # the next session will not know to read — or worse, will half-remember.
+  # Every file in the harness must be named in the map or its file index (FILES.md). An
+  # undocumented file is one the next session will not know to read — or will half-remember.
   if [ -f "$HAF/HAFNESS.md" ]; then
-    local rel undoc=""
+    local rel undoc="" map
+    map="$(cat "$HAF/HAFNESS.md" "$HAF/FILES.md" 2>/dev/null)"
     while IFS= read -r rel; do
       case "$rel" in
         HAFNESS.md) continue ;;
-        log/[0-9]*.md) grep -q '`log/`' "$HAF/HAFNESS.md" && continue ;;
-        specs/*) grep -q '`specs/`' "$HAF/HAFNESS.md" && continue ;;
-        plans/*) grep -q '`plans/`' "$HAF/HAFNESS.md" && continue ;;
-        research/*) grep -q '`research/`' "$HAF/HAFNESS.md" && continue ;;
-        rules/*) grep -q '`rules/`' "$HAF/HAFNESS.md" && continue ;;
+        log/[0-9]*.md) grep -q '`log/`' <<<"$map" && continue ;;
+        specs/*) grep -q '`specs/`' <<<"$map" && continue ;;
+        plans/*) grep -q '`plans/`' <<<"$map" && continue ;;
+        research/*) grep -q '`research/`' <<<"$map" && continue ;;
+        rules/*) grep -q '`rules/`' <<<"$map" && continue ;;
         .DS_Store|*/.DS_Store) continue ;;
       esac
-      grep -qF -- "\`$rel\`" "$HAF/HAFNESS.md" || undoc="$undoc $rel"
+      grep -qF -- "\`$rel\`" <<<"$map" || undoc="$undoc $rel"
     done < <(cd "$HAF" && find . -type f | sed 's|^\./||' | sort)
     if [ -n "$undoc" ]; then
-      echo "    files not named in HAFNESS.md:"
+      echo "    files not named in HAFNESS.md or FILES.md:"
       for rel in $undoc; do echo "      $rel"; done
       bad=1
     fi
   fi
 
-  # tasks.md column contract.
-  f="$HAF/tasks.md"
-  if [ -f "$f" ]; then
+  # tasks.md column contract — also for tasks-done.md, where done specs' rows go.
+  for f in "$HAF/tasks.md" "$HAF/tasks-done.md"; do
+    [ -f "$f" ] || continue
     local want='| ID | Spec | Task | Status | Scope | Run |'
     if ! grep -qxF "$want" "$f"; then
-      echo "    tasks.md header drifted"
+      echo "    $(basename "$f") header drifted"
       echo "      expected: $want"
       bad=1
     fi
@@ -103,7 +133,7 @@ harness_lint() {
       echo "    tasks.md has blank cells — use — instead"
       bad=1
     fi
-  fi
+  done
 
   # Every spec opens with its id and carries a known status.
   # done means verified: the spec has tasks, and every live one is done — so, by the
@@ -168,15 +198,21 @@ run "harness format" harness_lint
 # --- scope fence: changed files must sit inside the Scope of a task in progress ---
 # ponytail: compares against HEAD, so uncommitted work from before the task trips it.
 # Commit before /hafness-implement for a clean baseline; a per-task base commit if that bites.
+ROOT="$(dirname "$HAF")"
+changed_files() {               # every file changed since HEAD, plus untracked ones
+  git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  (cd "$ROOT" && { git diff --name-only HEAD 2>/dev/null || git ls-files; git ls-files --others --exclude-standard; } | sort -u)
+}
+
 scope_fence() {
   local root scopes changed file pat ok out=""
-  root="$(dirname "$HAF")"
+  root="$ROOT"
   [ -f "$HAF/tasks.md" ] || return 0
   scopes="$(awk -F'|' '/^\| T-/ && $5 ~ /doing/ {print $6}' "$HAF/tasks.md" \
     | tr ',' '\n' | tr -d '`' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -vx '—' | grep . || true)"
   if [ -z "$scopes" ]; then echo "    no task in progress — fence not armed"; return 0; fi
   if ! git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then echo "    not a git repo — fence skipped"; return 0; fi
-  changed="$(cd "$root" && { git diff --name-only HEAD 2>/dev/null || git ls-files; git ls-files --others --exclude-standard; } | sort -u)"
+  changed="$(changed_files)"
   while IFS= read -r file; do
     case "$file" in
       # The gate's own files: in scope only when a doing task names them exactly.
@@ -209,12 +245,56 @@ fi
 # shellcheck source=/dev/null
 . "$HAF/profile.sh"
 
+# Each check gets HAF_TIMEOUT_MIN minutes (default 20), then it and everything it started are
+# stopped: a hung xcodebuild or simulator fails the gate instead of holding it for hours.
+killtree() { local c; for c in $(pgrep -P "$1" 2>/dev/null); do killtree "$c"; done; kill -TERM "$1" 2>/dev/null; }
+with_timeout() {                # with_timeout <command…>
+  local out="$CUR_OUT" pid w rc
+  "$@" & pid=$!
+  ( sleep $(( ${HAF_TIMEOUT_MIN:-20} * 60 )); touch "$out.timeout"; killtree "$pid" ) >/dev/null 2>&1 & w=$!
+  wait "$pid" 2>/dev/null; rc=$?  # 2>/dev/null: no "Terminated" job notice when it is stopped
+  killtree "$w" 2>/dev/null; wait "$w" 2>/dev/null
+  return "$rc"
+}
+
+# A check listed in HAF_PATHS ("label|prefix prefix…") runs only when a changed file sits
+# under one of its prefixes. Everything runs with --all, when nothing changed (a clean tree
+# proves nothing by skipping), or when profile.sh or verify.sh changed.
+CHANGED="$(changed_files)"
+SELECT=1
+{ [ "$ALL" -eq 1 ] || [ -z "$CHANGED" ] || grep -qxE '.hafness/(profile|verify).sh' <<<"$CHANGED"; } && SELECT=0
+RAN=""; SKIPPED=""; SLOWSKIPPED=""
+is_slow() { local e; for e in "${HAF_SLOW[@]:-}"; do [ "$e" = "$1" ] && return 0; done; return 1; }
+paths_for() {                   # paths_for <label> → its prefixes, or nothing
+  local e
+  for e in "${HAF_PATHS[@]:-}"; do [ "${e%%|*}" = "$1" ] && { echo "${e#*|}"; return; }; done
+}
+touched() {                     # touched <prefixes> → 0 if a changed file is under one
+  local p f
+  for p in $1; do
+    while IFS= read -r f; do [[ -n "$f" && "$f" == "$p"* ]] && return 0; done <<< "$CHANGED"
+  done
+  return 1
+}
+
 DEFINED=0
+SEEN=" "
 check() {                       # check <label> <command string>
-  local label="$1" cmd="${2:-}"
+  local label="$1" cmd="${2:-}" paths
+  SEEN="$SEEN$label "
   [ -n "$cmd" ] || { echo "--- ${label}"; echo "    skipped — not found in this project"; return 0; }
   DEFINED=1
-  run "$label" bash -c "$cmd"
+  paths="$(paths_for "$label")"
+  if [ "$SELECT" -eq 1 ] && [ -n "$paths" ] && ! touched "$paths"; then
+    echo "--- ${label}"; echo "    skipped — nothing changed under $paths"
+    SKIPPED="$SKIPPED, $label"; return 0
+  fi
+  if [ "$SLOW" -eq 0 ] && is_slow "$label"; then
+    echo "--- ${label}"; echo "    skipped — slow; runs with --slow before the spec is done"
+    SLOWSKIPPED="$SLOWSKIPPED, $label"; return 0
+  fi
+  RAN="$RAN, $label"
+  run "$label" with_timeout bash -c "$cmd"
 }
 
 check "build"     "${HAF_BUILD:-}"
@@ -227,6 +307,16 @@ for entry in "${HAF_EXTRA[@]:-}"; do
   check "${entry%%|*}" "${entry#*|}"
 done
 
+# A label in HAF_PATHS or HAF_SLOW that names no check is a typo that silently does nothing.
+stray=""
+for e in "${HAF_PATHS[@]:-}"; do [ -z "$e" ] || [[ "$SEEN" == *" ${e%%|*} "* ]] || stray="$stray, ${e%%|*}"; done
+for e in "${HAF_SLOW[@]:-}"; do [ -z "$e" ] || [[ "$SEEN" == *" $e "* ]] || stray="$stray, $e"; done
+if [ -n "$stray" ]; then
+  echo "--- profile labels"
+  echo "    HAF_PATHS or HAF_SLOW names a check that does not exist: ${stray#, }"
+  echo "    FAILED (profile labels)"; FAILED=1
+fi
+
 if [ "$DEFINED" -eq 0 ]; then
   echo "profile.sh declares no runnable checks — a harness that verifies nothing is not a harness"
   echo "HAFNESS_VERIFY: FAIL"
@@ -234,6 +324,7 @@ if [ "$DEFINED" -eq 0 ]; then
 fi
 
 if [ "$FAILED" -eq 0 ]; then VERDICT=PASS; EXIT=0; else VERDICT=FAIL; EXIT=1; fi
+[ "$FAILED" -eq 0 ] && rm -rf "$OUTDIR"   # keep logs only when something failed
 echo "HAFNESS_VERIFY: $VERDICT"
 
 # --- run log: one block per run, header written mechanically -------------------
@@ -252,6 +343,9 @@ if [ -n "$LOG_FEATURE" ]; then
   printf '\n## %s · %s · %s · attempt %s/%s · %s · %dm%02ds\n\n**Verdict** `HAFNESS_VERIFY: %s` (exit %d)\n' \
     "$run_id" "$(date +%H:%M)" "$LOG_FEATURE" "$LOG_ATTEMPT" "$LOG_BUDGET" "$VERDICT" $((dur/60)) $((dur%60)) \
     "$([ "$EXIT" -eq 0 ] && echo PASS || echo FAIL)" "$EXIT" >> "$today"
-  echo "HAFNESS_RUN: $run_id"
+  none() { [ -n "${1#, }" ] && echo "${1#, }" || echo none; }
+  printf '**Checks** ran: %s · skipped, no change under their paths: %s · skipped, slow: %s\n' \
+    "$(none "$RAN")" "$(none "$SKIPPED")" "$(none "$SLOWSKIPPED")" >> "$today"
+  echo "HAFNESS_RUN: $run_id · attempt $LOG_ATTEMPT/$LOG_BUDGET · $VERDICT"
 fi
 exit "$EXIT"

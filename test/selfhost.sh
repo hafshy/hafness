@@ -17,7 +17,7 @@ for d in "$ROOT"/skills/*/; do
   n="$(basename "$d")"
   grep -qx "name: $n" "$d/SKILL.md" || fail "skills/$n/SKILL.md frontmatter name != $n"
 done
-[ "$(ls -d "$ROOT"/skills/*/ | wc -l)" -eq 7 ] || fail "expected 7 skills"
+[ "$(ls -d "$ROOT"/skills/*/ | wc -l)" -eq 8 ] || fail "expected 8 skills"
 
 # 3. the shipped scripts and this repo's copies are the same scripts
 for s in verify.sh board.sh history.sh; do
@@ -25,7 +25,8 @@ for s in verify.sh board.sh history.sh; do
 done
 
 # 4. a fresh project from the template passes its own gate once one check exists
-tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+tmp="$(mktemp -d)"; logs="$(mktemp -d)"; trap 'rm -rf "$tmp" "$logs"' EXIT
+export TMPDIR="$logs"  # failing gate runs below keep their logs; clean them up with the rest
 cp -R "$TPL/." "$tmp/"
 H="$tmp/.hafness"
 [ -d "$H" ] || fail "template copy lost .hafness/"
@@ -35,7 +36,7 @@ out="$(bash "$H/verify.sh" --log F-001 2>&1)"; rc=$?
 grep -q 'HAFNESS_VERIFY: PASS' <<<"$out" || fail "no PASS verdict"
 grep -q 'HAFNESS_RUN: r-0001' <<<"$out" || fail "first run should be r-0001, got: $(grep HAFNESS_RUN <<<"$out")"
 out="$(bash "$H/verify.sh" --log F-001 2>&1)"
-grep -q 'HAFNESS_RUN: r-0002' <<<"$out" || fail "second run should be r-0002"
+grep -q 'HAFNESS_RUN: r-0002 · attempt 1/3 · PASS' <<<"$out" || fail "second run should be r-0002 · attempt 1/3 · PASS, got: $(grep HAFNESS_RUN <<<"$out")"
 bash "$H/verify.sh" >/dev/null 2>&1 || fail "written run block failed the grammar lint"
 
 # 4b. the gate counts attempts itself: failures climb to ESCALATED, a PASS resets the count
@@ -66,6 +67,13 @@ printf '# F-001 — Demo\n\nStatus: draft\n\n## Summary\nhas </script> inside\n'
 bash "$H/board.sh" >/dev/null
 grep -q 'data-path="specs/F-001.md"' "$H/board.html" || fail "board is missing the spec"
 [ "$(grep -c '</script>' "$H/board.html")" -eq "$(grep -c '<script' "$H/board.html")" ] || fail "a document broke out of its script block"
+# 6b. the board hook redraws silently for edits under .hafness/, and ignores the rest
+rm -f "$H/board.html"
+[ -z "$(echo '{"tool_input":{"file_path":"/elsewhere/a.swift"}}' | bash "$H/board.sh" --hook)" ] || fail "board hook printed"
+[ ! -f "$H/board.html" ] || fail "board hook redrew for a file outside .hafness/"
+[ -z "$(echo "{\"tool_input\":{\"file_path\":\"$H/tasks.md\"}}" | bash "$H/board.sh" --hook)" ] || fail "board hook printed"
+[ -f "$H/board.html" ] || fail "board hook did not redraw after a .hafness/ edit"
+echo 'not json' | bash "$H/board.sh" --hook || fail "board hook exited non-zero"
 
 # 7. the format lint catches drift in specs and tasks
 bash "$H/verify.sh" >/dev/null 2>&1 || fail "valid spec failed the lint"
@@ -103,6 +111,46 @@ echo '# loosened' >> "$H/profile.sh"
 out="$(bash "$H/verify.sh" 2>&1)" && fail "editing profile.sh mid-task passed the fence"
 grep -q '.hafness/profile.sh' <<<"$out" || fail "fence did not name profile.sh"
 git -C "$tmp" checkout -q -- .hafness/profile.sh
+
+# 8b. HAF_PATHS skips a check whose paths saw no change; --all runs it; a hung check times out
+rm -f "$tmp/elsewhere.txt"
+printf '\nHAF_EXTRA=("web|echo web-ran")\nHAF_PATHS=("web|web/")\n' >> "$H/profile.sh"
+git -C "$tmp" add -A && git -C "$tmp" -c user.email=t@t -c user.name=t commit -qm paths
+echo y > "$tmp/src/a.txt"
+out="$(bash "$H/verify.sh" 2>&1)"
+grep -q 'skipped — nothing changed under web/' <<<"$out" || fail "a check with untouched paths ran:\n$out"
+out="$(bash "$H/verify.sh" --all 2>&1)"
+grep -A1 -- '--- web' <<<"$out" | grep -q '    ok' || fail "--all did not run the web check:\n$out"
+printf 'HAF_TIMEOUT_MIN=0\nHAF_EXTRA=("hang|sleep 30")\nHAF_PATHS=()\n' >> "$H/profile.sh"
+out="$(bash "$H/verify.sh" 2>&1)" && fail "a hung check passed"
+grep -q 'timed out' <<<"$out" || fail "a hung check was not reported as timed out:\n$out"
+grep -q 'Terminated' <<<"$out" && fail "the timeout leaked a job notice"
+pgrep -f 'sleep 30$' >/dev/null && fail "a timed-out check left its process running"
+
+# 8c. a check named in HAF_SLOW is skipped until --slow, and the log says so
+printf 'HAF_TIMEOUT_MIN=20\nHAF_EXTRA=("journey|echo journey-ran")\nHAF_SLOW=("journey")\n' >> "$H/profile.sh"
+git -C "$tmp" add -A && git -C "$tmp" -c user.email=t@t -c user.name=t commit -qm slow
+echo z > "$tmp/src/a.txt"
+out="$(bash "$H/verify.sh" --log F-001 2>&1)"
+grep -q 'skipped — slow' <<<"$out" || fail "a slow check ran without --slow:\n$out"
+grep -q 'skipped, slow: journey' "$H"/log/[0-9]*.md || fail "the run block does not name the skipped slow check"
+out="$(bash "$H/verify.sh" --slow 2>&1)"
+grep -A1 -- '--- journey' <<<"$out" | grep -q '    ok' || fail "--slow did not run the slow check:\n$out"
+
+# 8d. a fast PASS between failing slow runs does not reset the attempt count
+commit() { git -C "$tmp" add -A && git -C "$tmp" -c user.email=t@t -c user.name=t commit -qm "$1"; echo z$RANDOM > "$tmp/src/a.txt"; }
+perl -pi -e 's/journey-ran/journey-ran; false/' "$H/profile.sh"; commit slow-fails
+bash "$H/verify.sh" --log F-002 >/dev/null 2>&1
+out="$(bash "$H/verify.sh" --log F-002 --slow 2>&1)"
+grep -q 'attempt 1/3 · FAIL' <<<"$out" || fail "first slow failure should be attempt 1: $(grep HAFNESS_RUN <<<"$out")"
+bash "$H/verify.sh" --log F-002 >/dev/null 2>&1
+out="$(bash "$H/verify.sh" --log F-002 --slow 2>&1)"
+grep -q 'attempt 2/3 · FAIL' <<<"$out" || fail "a fast PASS reset the count: $(grep HAFNESS_RUN <<<"$out")"
+perl -pi -e 's/journey-ran; false/journey-ran/' "$H/profile.sh"; commit slow-passes
+
+printf 'HAF_SLOW=("journy")\n' >> "$H/profile.sh"
+out="$(bash "$H/verify.sh" 2>&1)" && fail "a misspelt HAF_SLOW label passed"
+grep -q 'names a check that does not exist: journy' <<<"$out" || fail "the stray label was not named:\n$out"
 
 # 9. a template with nothing runnable must refuse to pass
 mkdir "$tmp/empty" && cp -R "$TPL/." "$tmp/empty/"

@@ -50,7 +50,9 @@ from imagination:
 
 ## 4. Write the tasks
 
-Append rows to `.hafness/tasks.md`, continuing the highest `T-nnn`:
+Append rows to `.hafness/tasks.md`, continuing the highest `T-nnn` across `tasks.md` and
+`tasks-done.md` — find it with `grep -hoE '^\| T-[0-9]+' .hafness/tasks*.md | sort | tail -1`;
+never read the archive itself:
 
     | T-nnn | <spec id> | <one line, imperative> | todo | `path/`, `other/file.swift` | — |
 
@@ -67,8 +69,8 @@ Re-planning: mark the old unfinished tasks `dropped`, never delete rows.
 2. `state/current.md`: **In flight** → `<id> — <title> (planned, n tasks)`. **Next action** →
    `/hafness-implement <id>`. Plan risks go under **Open risks**.
 3. `bash .hafness/verify.sh` — the format lint must pass; fix the files, never the lint.
-4. `bash .hafness/board.sh`; if this session has an Artifact tool, publish `board.html`
-   (with the URL under `## Board` if one is there, else new — and record the URL).
+4. `bash .hafness/board.sh` to redraw the local board. Never publish it here: that is
+   `/hafness-board`, only when the operator asks.
 5. Stop:
 
 > Plan and <n> tasks for <id> are on the board. Each task's Scope is the fence the gate

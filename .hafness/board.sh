@@ -3,13 +3,25 @@
 # the board is a view of it. Never edit board.html by hand — the next run overwrites it.
 #
 # One self-contained file: every source document is embedded as a <script type="text/…">
-# block and drawn in the browser, so it opens from disk and publishes as an Artifact as is.
+# block and drawn in the browser, so it opens from disk. /hafness-board publishes it as an
+# Artifact, only when the operator asks: publishing makes the agent read the whole file.
 # ponytail: markdown is rendered by marked from cdnjs; offline, documents show as plain text.
 
 set -uo pipefail
 HAF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NAME="$(basename "$(dirname "$HAF")" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')"
 OUT="$HAF/board.html"
+
+# --hook: PostToolUse hook for Write/Edit. Redraws only when the edited file is under .hafness/
+# (never for board.html itself). Silent and always exits 0, so it never adds to the context.
+if [ "${1:-}" = "--hook" ]; then
+  path="$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input", {}).get("file_path", ""))' 2>/dev/null)" || exit 0
+  case "$path" in
+    */.hafness/board.html) ;;
+    */.hafness/*) bash "${BASH_SOURCE[0]}" >/dev/null 2>&1 ;;
+  esac
+  exit 0
+fi
 
 embed() {                       # embed <type> <path relative to .hafness/>
   [ -f "$HAF/$2" ] || return 0
@@ -149,6 +161,7 @@ footer { font-size: 0.8rem; color: var(--muted); }
 HTML
 embed markdown state/current.md
 embed markdown tasks.md
+embed markdown tasks-done.md
 embed markdown feedback.md
 embed markdown history.md
 embed plain profile.sh
@@ -193,7 +206,7 @@ const specs = byPath(/^specs\/F-\d+\.md$/).map(p => {
   const body = t.split("\n").slice(1).join("\n").replace(/^Status:.*$/m, "");
   return { id, title, status, body, plan: docs[`plans/${id}.md`] };
 });
-const tasks = (docs["tasks.md"] || "").split("\n").filter(l => /^\| T-/.test(l)).map(l => {
+const tasks = ((docs["tasks-done.md"] || "") + "\n" + (docs["tasks.md"] || "")).split("\n").filter(l => /^\| T-/.test(l)).map(l => {
   const [id, spec, task, status, scope, run] = l.split("|").slice(1, -1).map(c => c.trim());
   return { id, spec, task, status, scope: ticks(scope), run };
 });

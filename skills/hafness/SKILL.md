@@ -26,4 +26,4 @@ Then print the resume point in four lines, no preamble:
 - **In flight** — spec id and title, or "nothing"
 - **Next action** — verbatim from `state/current.md`, or the resume action above
 - **Open risks** — from `current.md`, or "none"
-- **Board** — the published URL from `current.md`, else `.hafness/board.html`
+- **Board** — `.hafness/board.html` (plus the last `/hafness-board` link, if `current.md` has one)
