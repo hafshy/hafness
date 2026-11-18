@@ -125,3 +125,18 @@ guards `verify.sh`, `profile.sh` and `policy.md`; a done task's run id must be a
 init gitignores `history.md` and `board.html`.
 Rejected: requiring a `/hafness-feedback` prompt in `history.md` before `done`.
 Reverses: "only the operator moves `built` to `done`" (2026-10-05).
+
+## 2026-11-08 — cut token use and gate time (recorded 2026-11-18)
+Context: built outside the loop in commit 1f78bae, with no spec; written up here afterward
+so this log stays complete. Publishing the board on every step and pasting full gate output
+cost tokens for nothing new; slow checks ran on every gate.
+Chose: the loop never publishes — a PostToolUse hook redraws `board.html` locally, and
+`/hafness-board` publishes only when the operator asks. `verify.sh` prints `ok` per passing
+check and a trimmed excerpt of a failing one (full log in a temp file). The file index moves
+from `HAFNESS.md` to `FILES.md`; done specs' tasks move to `tasks-done.md`. Gate time: a
+per-check timeout (`HAF_TIMEOUT_MIN`), path-scoped checks (`HAF_PATHS`), a slow tier
+(`HAF_SLOW`) that runs once with `--slow` before a spec is done; only a full PASS resets the
+attempt count. `/hafness-implement` caps simulator runs at 3 per task between gates.
+Rejected: publishing the board as part of the loop (it cost a round trip and tokens every step).
+Reverses: "published as an Artifact when possible" (2026-10-05); "`HAFNESS.md` names every
+file" (settled decision 5) — the map routes, `FILES.md` indexes.

@@ -143,8 +143,8 @@ harness_lint() {
     [ -e "$f" ] || continue
     id="$(basename "$f" .md)"
     if grep -qx 'Status: done' "$f"; then
-      left="$(awk -F'|' -v id="$id" '/^\| T-/ { gsub(/ /, ""); if ($3 == id) { n++; if ($5 != "done" && $5 != "dropped") l = l " " $2 } }
-        END { print (n ? l : " (no tasks)") }' "$HAF/tasks.md" 2>/dev/null)"
+      left="$(cat "$HAF/tasks.md" "$HAF/tasks-done.md" 2>/dev/null | awk -F'|' -v id="$id" '/^\| T-/ { gsub(/ /, ""); if ($3 == id) { n++; if ($5 != "done" && $5 != "dropped") l = l " " $2 } }
+        END { print (n ? l : " (no tasks)") }')"
       [ -z "$left" ] || { echo "    $id: done, but not every task is:$left"; bad=1; }
     fi
     head -1 "$f" | grep -qE '^# F-[0-9]+ — .+' || { echo "    $(basename "$f"): first line must be '# F-nnn — <title>'"; bad=1; }

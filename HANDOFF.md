@@ -7,7 +7,7 @@ already settled, and what will bite you. It does not track live state.
 flight and what to do next. Read that every session. If this file and that one ever
 disagree, that one wins, and this file is stale.
 
-Written 2026-09-15 at the end of the design phase. Updated 2026-10-05 for the v1 loop.
+Written 2026-09-15 at the end of the design phase. Updated 2026-10-05 for the v1 loop, and 2026-11-18 for the local board and `FILES.md`.
 
 ---
 
@@ -55,7 +55,9 @@ Full entries with what each one rejected are in
 3. **Every generated file is human-readable.** No JSON anywhere in the design.
 4. **`profile.sh`, not `profile.md`** — shell variables sourced by `verify.sh`, so the list
    of commands and the thing that runs them are one file.
-5. **`HAFNESS.md` names every file**, capped at 60 lines, linted both directions.
+5. **Every file in `.hafness/` is named** — in `HAFNESS.md` (the map, ≤ 60 lines) or
+   `FILES.md` (the index). The lint fails an unnamed file; it does not check that a named
+   file exists.
 6. **A plugin, not a bare skill.** This reversed an earlier choice.
 
 7. **v1: you approve intent; the agent owns paths; a passing gate is done.** Feedback is optional. Contract sign-off,
@@ -111,11 +113,11 @@ upgrade if that gets annoying.
 **The history hook logs everything typed**, into a committed file. It needs `python3` to
 parse the hook input, and it must never print: a prompt hook's stdout joins the conversation.
 
-**The board is a generated view.** Hand edits to `board.html` vanish on the next prompt.
-Edit the markdown.
+**The board is a generated view, and local.** Hand edits to `board.html` vanish on the next
+redraw. Edit the markdown. The loop never publishes it; `/hafness-board` does, on request.
 
 **The format lint is strict.** Adding a file under `.hafness/` without naming it in
-`HAFNESS.md` fails. This is intentional.
+`HAFNESS.md` or `FILES.md` fails. This is intentional.
 
 **Empty is skipped, not failed** in `profile.sh` — but a profile with nothing runnable
 refuses to pass at all. If a stack goes undetected, the gate says so rather than going green.

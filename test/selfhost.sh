@@ -96,6 +96,13 @@ echo '| T-002 | F-001 | Polish it | todo | `src/` | — |' >> "$H/tasks.md"
 out="$(bash "$H/verify.sh" 2>&1)" && fail "done spec with a todo task passed the lint"
 grep -q 'F-001: done, but not every task is: T-002' <<<"$out" || fail "lint did not name the open task"
 perl -ni -e 'print unless /^\| T-002 /' "$H/tasks.md"
+# done spec whose tasks moved to tasks-done.md, as /hafness-implement does
+{ grep -v '^| T-' "$H/tasks.md"; } > "$H/tasks-done.md"
+grep '^| T-' "$H/tasks.md" >> "$H/tasks-done.md"
+perl -ni -e 'print unless /^\| T-/' "$H/tasks.md"
+bash "$H/verify.sh" >/dev/null 2>&1 || fail "done spec with its tasks in tasks-done.md failed the lint"
+grep '^| T-' "$H/tasks-done.md" >> "$H/tasks.md"
+rm "$H/tasks-done.md"
 perl -pi -e 's/^Status: done/Status: planned/' "$H/specs/F-001.md"
 
 # 8. the scope fence fails on a change outside every doing task's Scope

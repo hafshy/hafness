@@ -1,8 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="generated" content="2026-11-08 11:56">
-<title>hafness Board</title>
+<meta name="generated" content="2026-11-18 13:47">
+<title>Harness Board</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: header with the resume point, the loop as a strip of counts, then one panel per tab. */
@@ -127,27 +127,26 @@ footer { font-size: 0.8rem; color: var(--muted); }
 </style>
 <script type="text/markdown" data-path="state/current.md"># Current
 
-Updated: 2026-10-12
+Updated: 2026-11-18
 
 ## In flight
 
-nothing — F-009 done; gate hardening and "a passing gate is done" landed outside the loop
-(see `state/decisions.md`, 2026-10-12)
+nothing — F-009 done; the 2026-11-08 token and gate-time changes landed outside the loop
+(see `state/decisions.md`)
 
 ## Next action
 
-1. Optional: `/hafness-feedback F-009 …` if anything in the loop should change.
-2. Install the history hook in this repo (`.claude/settings.json`) if you want prompts logged here too.
-3. Commit and push, so `npx skills add hafshy/hafness` ships v1.
-4. First real use: `/hafness-init` in an iOS repo.
+1. First real use: `/hafness-init` in an iOS repo.
+2. Optional: install the history and board hooks in this repo (`.claude/settings.json`).
+3. Optional: `/hafness-feedback F-009 …` if anything in the loop should change.
 
 ## Open risks
 
 - Every skill is prose; `verify.sh` (lint + scope fence) is the only boundary. The skills'
   "refuse" steps are guidance until a hook enforces them.
 - The scope fence compares against HEAD, so uncommitted work from before a task trips it.
-- The history hook needs `python3` and logs everything typed. Init now gitignores
-  `history.md` and `board.html`; this repo still commits `board.html`.
+- The history hook needs `python3` and logs everything typed. Init gitignores `history.md`
+  and `board.html`; this repo still commits `board.html` and runs neither hook.
 - The loop skills (describe, plan, implement, feedback) have not yet been driven end to end
   in a fresh session; `test/selfhost.sh` covers the scripts, not the prose.
 
@@ -157,7 +156,7 @@ r-0003 · PASS · 2026-10-12
 
 ## Board
 
-https://claude.ai/artifact/RNZwchPVgdaqTnLfer8PMG
+Local: `.hafness/board.html`. Not published — `/hafness-board` publishes on request.
 </script>
 <script type="text/markdown" data-path="tasks.md"># Tasks
 
@@ -172,6 +171,14 @@ Every task, for every spec. Written by `/hafness-plan` and `/hafness-feedback`, 
 - **Scope** is the fence. While a task is `doing`, `verify.sh` fails if a changed file falls
   outside the Scope of every `doing` task. Paths ending in `/` match the whole folder.
 - Use `—` for empty, never a blank cell. The header and column order are fixed.
+
+| ID | Spec | Task | Status | Scope | Run |
+|----|------|------|--------|-------|-----|
+</script>
+<script type="text/markdown" data-path="tasks-done.md"># Tasks — done
+
+Tasks of done specs, moved here by `/hafness-implement` so `tasks.md` stays short.
+Same columns and rules as `tasks.md`.
 
 | ID | Spec | Task | Status | Scope | Run |
 |----|------|------|--------|-------|-----|
